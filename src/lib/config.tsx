@@ -83,7 +83,7 @@ export const siteConfig = {
       },
       secondary: {
         text: "Log in",
-        href: "/waitlist",
+        href: "/sign-in",
       },
     },
   },

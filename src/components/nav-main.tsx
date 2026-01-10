@@ -55,8 +55,8 @@ export function NavMain({
               const isActive =
                 (item.title === "Dashboard" && pathname === "/dashboard") ||
                 (item.title === "Transactions" &&
-                  pathname === "/transactions") ||
-                (item.title === "Investments" && pathname === "/investments") ||
+                  pathname === "/dashboard/transactions") ||
+                (item.title === "Investments" && pathname === "/dashboard/investments") ||
                 (item.title === "Analytics" && pathname === "/analytics") ||
                 (item.title === "Projects" && pathname === "/projects");
 

@@ -69,6 +69,7 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import type { FamilyRole, Prisma } from "@/generated/prisma";
+import { PrismaClientKnownRequestError } from "@/generated/prisma/runtime/library";
 
 // Prisma client instantiation per request (best practice)
 
@@ -112,12 +113,19 @@ export async function getCurrentAppUser() {
   const authUser = await getCurrentAuthUser();
   if (!authUser) return null;
 
-  
-
   try {
-    // Try to get existing AppUser
-    let appUser = await prisma.appUser.findUnique({
+    // Use upsert to get or create AppUser atomically (prevents race conditions)
+    let appUser = await prisma.appUser.upsert({
       where: { userId: authUser.id },
+      update: {
+        // Update timestamp on each login
+        updatedAt: new Date(),
+      },
+      create: {
+        userId: authUser.id,
+        firstName: authUser.name?.split(" ")[0] || null,
+        lastName: authUser.name?.split(" ").slice(1).join(" ") || null,
+      },
       include: {
         familyMemberships: {
           include: {
@@ -127,56 +135,49 @@ export async function getCurrentAppUser() {
       },
     });
 
-    // Create AppUser if it doesn't exist (first login)
-    if (!appUser) {
-      try {
-        appUser = await prisma.appUser.create({
+    // Create default family if user has no family memberships
+    if (appUser.familyMemberships.length === 0) {
+      const firstName = appUser.firstName || authUser.name?.split(" ")[0] || "User";
+      const defaultFamilyName = `${firstName}'s Family`;
+
+      await prisma.$transaction(async (tx) => {
+        // Create the family
+        const family = await tx.family.create({
           data: {
-            userId: authUser.id,
-            firstName: authUser.name?.split(" ")[0] || null,
-            lastName: authUser.name?.split(" ").slice(1).join(" ") || null,
-          },
-          include: {
-            familyMemberships: {
-              include: {
-                family: true,
-              },
-            },
+            name: defaultFamilyName,
+            description: "My default family",
+            currency: "USD",
+            timezone: "UTC",
           },
         });
-      } catch (createError) {
-        // Handle race condition - another request might have created the AppUser
-        if (
-          createError instanceof Error &&
-          createError.message.includes("P2002")
-        ) {
-          // Try to fetch the AppUser again
-          appUser = await prisma.appUser.findUnique({
-            where: { userId: authUser.id },
-            include: {
-              familyMemberships: {
-                include: {
-                  family: true,
-                },
-              },
-            },
-          });
 
-          if (!appUser) {
-            // If still not found, re-throw the original error
-            throw createError;
-          }
-        } else {
-          throw createError;
-        }
-      }
+        // Add the user as the owner
+        await tx.familyMember.create({
+          data: {
+            familyId: family.id,
+            appUserId: appUser.id,
+            role: "OWNER",
+          },
+        });
+      });
+
+      // Refetch appUser with family memberships
+      appUser = await prisma.appUser.findUnique({
+        where: { id: appUser.id },
+        include: {
+          familyMemberships: {
+            include: {
+              family: true,
+            },
+          },
+        },
+      }) as typeof appUser;
     }
 
     return appUser;
   } catch (error) {
     console.error("Error getting current AppUser:", error);
     return null;
-  } finally {
   }
 }
 
