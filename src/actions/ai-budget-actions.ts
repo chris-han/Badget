@@ -9,15 +9,10 @@
  * transactional data with the OpenAI API through the Vercel AI SDK.
  */
 
-import { PrismaClient } from "@/generated/prisma";
+import { prisma } from "@/lib/db";
 import { getCurrentAppUser } from "./user-actions";
 import type { TransactionStatus, TransactionType } from "@/generated/prisma";
 import OpenAI from "openai";
-
-// Instantiate Prisma per request
-function getPrismaClient() {
-  return new PrismaClient();
-}
 
 export type CategoryBudgetRecommendation = {
   categoryId: string;
@@ -67,7 +62,7 @@ export async function generateBudgetRecommendations(
   console.log("👨‍👩‍👧‍👦 Family ID:", familyId);
   if (!familyId) throw new Error("No family found for user");
 
-  const prisma = getPrismaClient();
+  
 
   try {
     const endDate = new Date();
@@ -202,7 +197,6 @@ export async function generateBudgetRecommendations(
     console.error("Error generating budget recommendations:", error);
     throw new Error("Failed to generate budget recommendations");
   } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -222,7 +216,7 @@ export async function detectTransactionAnomalies(
   console.log("👨‍👩‍👧‍👦 Family ID for anomalies:", familyId);
   if (!familyId) throw new Error("No family found for user");
 
-  const prisma = getPrismaClient();
+  
 
   try {
     const endDate = new Date();
@@ -304,7 +298,6 @@ export async function detectTransactionAnomalies(
     console.error("❌ Error detecting anomalies:", error);
     return [];
   } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -320,7 +313,7 @@ export async function forecastCategorySpending(
   const familyId = appUser.familyMemberships[0]?.familyId;
   if (!familyId) throw new Error("No family found for user");
 
-  const prisma = getPrismaClient();
+  
 
   try {
     const endDate = new Date();
@@ -390,7 +383,6 @@ export async function forecastCategorySpending(
     console.error("Error forecasting spending:", error);
     return [];
   } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -407,7 +399,7 @@ export async function answerFinanceQuestion(question: string) {
   console.log("👨‍👩‍👧‍👦 Family ID for question:", familyId);
   if (!familyId) throw new Error("No family found for user");
 
-  const prisma = getPrismaClient();
+  
 
   try {
     const recentTransactions = await prisma.transaction.findMany({
@@ -468,7 +460,6 @@ export async function answerFinanceQuestion(question: string) {
     console.error("Error answering question:", error);
     return "";
   } finally {
-    await prisma.$disconnect();
   }
 }
 

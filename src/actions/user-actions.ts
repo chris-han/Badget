@@ -64,16 +64,13 @@
  * - Error messages don't leak sensitive information
  */
 
-import { PrismaClient } from "@/generated/prisma";
+import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import type { FamilyRole, Prisma } from "@/generated/prisma";
 
 // Prisma client instantiation per request (best practice)
-function getPrismaClient() {
-  return new PrismaClient();
-}
 
 // Types for better TypeScript support
 type CreateFamilyInput = {
@@ -115,7 +112,7 @@ export async function getCurrentAppUser() {
   const authUser = await getCurrentAuthUser();
   if (!authUser) return null;
 
-  const prisma = getPrismaClient();
+  
 
   try {
     // Try to get existing AppUser
@@ -180,7 +177,6 @@ export async function getCurrentAppUser() {
     console.error("Error getting current AppUser:", error);
     return null;
   } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -193,7 +189,7 @@ export async function updateCurrentAppUser(input: UpdateAppUserInput) {
     throw new Error("User not authenticated");
   }
 
-  const prisma = getPrismaClient();
+  
 
   try {
     const updatedUser = await prisma.appUser.update({
@@ -219,7 +215,6 @@ export async function updateCurrentAppUser(input: UpdateAppUserInput) {
       error: error instanceof Error ? error.message : "Update failed",
     };
   } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -230,7 +225,7 @@ export async function getUserFamilies() {
   const appUser = await getCurrentAppUser();
   if (!appUser) return [];
 
-  const prisma = getPrismaClient();
+  
 
   try {
     const families = await prisma.familyMember.findMany({
@@ -264,7 +259,6 @@ export async function getUserFamilies() {
     console.error("Error getting user families:", error);
     return [];
   } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -277,7 +271,7 @@ export async function createFamily(input: CreateFamilyInput) {
     throw new Error("User not authenticated");
   }
 
-  const prisma = getPrismaClient();
+  
 
   try {
     // Use transaction to ensure data consistency
@@ -312,7 +306,6 @@ export async function createFamily(input: CreateFamilyInput) {
       error: error instanceof Error ? error.message : "Failed to create family",
     };
   } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -326,7 +319,7 @@ export async function checkFamilyPermission(
   const appUser = await getCurrentAppUser();
   if (!appUser) return false;
 
-  const prisma = getPrismaClient();
+  
 
   try {
     const membership = await prisma.familyMember.findUnique({
@@ -343,7 +336,6 @@ export async function checkFamilyPermission(
     console.error("Error checking family permission:", error);
     return false;
   } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -365,7 +357,7 @@ export async function inviteFamilyMember(input: InviteFamilyMemberInput) {
     throw new Error("Insufficient permissions to invite members");
   }
 
-  const prisma = getPrismaClient();
+  
 
   try {
     // Check if user is already a member
@@ -437,7 +429,6 @@ export async function inviteFamilyMember(input: InviteFamilyMemberInput) {
         error instanceof Error ? error.message : "Failed to send invitation",
     };
   } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -450,7 +441,7 @@ export async function acceptFamilyInvitation(token: string) {
     throw new Error("User not authenticated");
   }
 
-  const prisma = getPrismaClient();
+  
 
   try {
     // Use transaction to ensure consistency
@@ -533,7 +524,6 @@ export async function acceptFamilyInvitation(token: string) {
         error instanceof Error ? error.message : "Failed to accept invitation",
     };
   } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -557,7 +547,7 @@ export async function getFamilyDetails(familyId: string) {
     throw new Error("Access denied: Not a family member");
   }
 
-  const prisma = getPrismaClient();
+  
 
   try {
     const family = await prisma.family.findUnique({
@@ -601,7 +591,6 @@ export async function getFamilyDetails(familyId: string) {
     console.error("Error getting family details:", error);
     return null;
   } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -620,7 +609,7 @@ export async function removeFamilyMember(familyId: string, memberId: string) {
     throw new Error("Insufficient permissions to remove members");
   }
 
-  const prisma = getPrismaClient();
+  
 
   try {
     const result = await prisma.$transaction(async (tx) => {
@@ -663,7 +652,6 @@ export async function removeFamilyMember(familyId: string, memberId: string) {
       error: error instanceof Error ? error.message : "Failed to remove member",
     };
   } finally {
-    await prisma.$disconnect();
   }
 }
 

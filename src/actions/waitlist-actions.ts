@@ -55,13 +55,8 @@
  *    ```
  */
 
-import { PrismaClient } from "@/generated/prisma";
+import { prisma } from "@/lib/db";
 import type { WaitlistStatus } from "@/generated/prisma";
-
-// Prisma client instantiation per request (best practice)
-function getPrismaClient() {
-  return new PrismaClient();
-}
 
 // Types for better TypeScript support
 type JoinWaitlistInput = {
@@ -113,7 +108,6 @@ export async function joinWaitlist(input: JoinWaitlistInput) {
   }
 
   const normalizedEmail = normalizeEmail(email);
-  const prisma = getPrismaClient();
 
   try {
     // Check if email already exists
@@ -172,8 +166,6 @@ export async function joinWaitlist(input: JoinWaitlistInput) {
     }
 
     throw new Error("Failed to join waitlist. Please try again.");
-  } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -186,7 +178,6 @@ export async function getWaitlistPosition(email: string) {
   }
 
   const normalizedEmail = normalizeEmail(email);
-  const prisma = getPrismaClient();
 
   try {
     const entry = await prisma.waitlist.findUnique({
@@ -214,8 +205,6 @@ export async function getWaitlistPosition(email: string) {
   } catch (error) {
     console.error("Error getting waitlist position:", error);
     throw new Error("Failed to get waitlist position");
-  } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -227,7 +216,6 @@ export async function getWaitlistEntries(
   limit: number = 50,
   status?: WaitlistStatus
 ) {
-  const prisma = getPrismaClient();
   const skip = (page - 1) * limit;
 
   try {
@@ -252,8 +240,6 @@ export async function getWaitlistEntries(
   } catch (error) {
     console.error("Error getting waitlist entries:", error);
     throw new Error("Failed to get waitlist entries");
-  } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -265,7 +251,6 @@ export async function approveWaitlistEntry(
   input: ApproveWaitlistInput = {}
 ) {
   const { expiresInDays = 14, notes } = input;
-  const prisma = getPrismaClient();
 
   try {
     const expiresAt = new Date();
@@ -289,8 +274,6 @@ export async function approveWaitlistEntry(
   } catch (error) {
     console.error("Error approving waitlist entry:", error);
     throw new Error("Failed to approve waitlist entry");
-  } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -298,8 +281,6 @@ export async function approveWaitlistEntry(
  * Reject a waitlist entry (admin only)
  */
 export async function rejectWaitlistEntry(waitlistId: string, notes?: string) {
-  const prisma = getPrismaClient();
-
   try {
     const updatedEntry = await prisma.waitlist.update({
       where: { id: waitlistId },
@@ -317,8 +298,6 @@ export async function rejectWaitlistEntry(waitlistId: string, notes?: string) {
   } catch (error) {
     console.error("Error rejecting waitlist entry:", error);
     throw new Error("Failed to reject waitlist entry");
-  } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -326,8 +305,6 @@ export async function rejectWaitlistEntry(waitlistId: string, notes?: string) {
  * Convert a waitlist entry to user (called when user creates account)
  */
 export async function convertWaitlistEntry(waitlistId: string, userId: string) {
-  const prisma = getPrismaClient();
-
   try {
     const updatedEntry = await prisma.waitlist.update({
       where: { id: waitlistId },
@@ -346,8 +323,6 @@ export async function convertWaitlistEntry(waitlistId: string, userId: string) {
   } catch (error) {
     console.error("Error converting waitlist entry:", error);
     throw new Error("Failed to convert waitlist entry");
-  } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -359,7 +334,6 @@ export async function convertWaitlistEntryByEmail(
   userId: string
 ) {
   const normalizedEmail = normalizeEmail(email);
-  const prisma = getPrismaClient();
 
   try {
     const entry = await prisma.waitlist.findUnique({
@@ -391,8 +365,6 @@ export async function convertWaitlistEntryByEmail(
   } catch (error) {
     console.error("Error converting waitlist entry by email:", error);
     throw new Error("Failed to convert waitlist entry");
-  } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -403,7 +375,6 @@ export async function isEmailApprovedForSignup(
   email: string
 ): Promise<boolean> {
   const normalizedEmail = normalizeEmail(email);
-  const prisma = getPrismaClient();
 
   try {
     const entry = await prisma.waitlist.findUnique({
@@ -432,8 +403,6 @@ export async function isEmailApprovedForSignup(
   } catch (error) {
     console.error("Error checking email approval:", error);
     return false;
-  } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -441,8 +410,6 @@ export async function isEmailApprovedForSignup(
  * Get waitlist statistics (admin only)
  */
 export async function getWaitlistStats(): Promise<WaitlistStats> {
-  const prisma = getPrismaClient();
-
   try {
     const [totalEntries, statusCounts, avgWaitTime] = await Promise.all([
       prisma.waitlist.count(),
@@ -492,8 +459,6 @@ export async function getWaitlistStats(): Promise<WaitlistStats> {
   } catch (error) {
     console.error("Error getting waitlist stats:", error);
     throw new Error("Failed to get waitlist statistics");
-  } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -505,8 +470,6 @@ export async function batchApproveWaitlist(
   toPosition: number,
   expiresInDays: number = 14
 ) {
-  const prisma = getPrismaClient();
-
   try {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + expiresInDays);
@@ -534,8 +497,6 @@ export async function batchApproveWaitlist(
   } catch (error) {
     console.error("Error batch approving waitlist:", error);
     throw new Error("Failed to batch approve waitlist entries");
-  } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -543,8 +504,6 @@ export async function batchApproveWaitlist(
  * Clean up expired invitations (run as cron job)
  */
 export async function cleanupExpiredInvitations() {
-  const prisma = getPrismaClient();
-
   try {
     const result = await prisma.waitlist.updateMany({
       where: {
@@ -566,7 +525,5 @@ export async function cleanupExpiredInvitations() {
   } catch (error) {
     console.error("Error cleaning up expired invitations:", error);
     throw new Error("Failed to clean up expired invitations");
-  } finally {
-    await prisma.$disconnect();
   }
 }

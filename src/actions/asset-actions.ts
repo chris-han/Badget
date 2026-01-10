@@ -1,11 +1,8 @@
 "use server";
 
-import { PrismaClient } from "@/generated/prisma";
+import { prisma } from "@/lib/db";
 import { getCurrentAppUser } from "./user-actions";
 
-function getPrismaClient() {
-  return new PrismaClient();
-}
 
 async function getActiveFamilyId(): Promise<string | null> {
   const appUser = await getCurrentAppUser();
@@ -21,7 +18,7 @@ export async function getInvestmentAssets() {
     return [];
   }
 
-  const prisma = getPrismaClient();
+  
   try {
     const assets = await prisma.investmentAsset.findMany({
       where: { familyId },
@@ -57,7 +54,6 @@ export async function getInvestmentAssets() {
     console.error("Error fetching investment assets:", error);
     return [];
   } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -95,7 +91,7 @@ export async function createInvestmentAsset({
     throw new Error("User not authenticated");
   }
 
-  const prisma = getPrismaClient();
+  
 
   try {
     const asset = await prisma.investmentAsset.create({
@@ -133,7 +129,6 @@ export async function createInvestmentAsset({
       error: error instanceof Error ? error.message : "Failed to create asset",
     };
   } finally {
-    await prisma.$disconnect();
   }
 }
 

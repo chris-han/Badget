@@ -1,6 +1,7 @@
 "use server";
 
-import { PrismaClient, AccountType, Prisma } from "@/generated/prisma";
+import { prisma } from "@/lib/db";
+import { AccountType, Prisma } from "@/generated/prisma";
 import { getCurrentAppUser } from "./user-actions";
 import type { BankInfo } from "@/data/banks";
 
@@ -115,9 +116,6 @@ interface Transaction {
   currencyExchange?: Record<string, unknown>[];
 }
 
-function getPrismaClient() {
-  return new PrismaClient();
-}
 
 function getBaseUrl(): string {
   // Custom app URL environment variable
@@ -496,7 +494,7 @@ export async function completeGoCardlessConnection(
     throw new Error("User not authenticated or no family found");
   }
 
-  const prisma = getPrismaClient();
+  
 
   try {
     // Step 1: Generate fresh access token
@@ -728,7 +726,6 @@ export async function completeGoCardlessConnection(
       `Failed to complete bank connection: ${error instanceof Error ? error.message : "Unknown error"}`
     );
   } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -744,7 +741,7 @@ export async function importGoCardlessTransactions(
     throw new Error("User not authenticated or no family found");
   }
 
-  const prisma = getPrismaClient();
+  
 
   try {
     // Generate fresh access token
@@ -836,7 +833,6 @@ export async function importGoCardlessTransactions(
       `Failed to import transactions: ${error instanceof Error ? error.message : "Unknown error"}`
     );
   } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -988,7 +984,7 @@ export async function removeAllGoCardlessData() {
     throw new Error("User not authenticated or no family found");
   }
 
-  const prisma = getPrismaClient();
+  
 
   try {
     // Get all GoCardless connections for this family
@@ -1064,7 +1060,6 @@ export async function removeAllGoCardlessData() {
       `Failed to remove GoCardless data: ${error instanceof Error ? error.message : "Unknown error"}`
     );
   } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -1077,7 +1072,7 @@ export async function syncGoCardlessBalances() {
     throw new Error("User not authenticated or no family found");
   }
 
-  const prisma = getPrismaClient();
+  
 
   try {
     // Generate fresh access token
@@ -1156,6 +1151,5 @@ export async function syncGoCardlessBalances() {
       `Failed to sync account balances: ${error instanceof Error ? error.message : "Unknown error"}`
     );
   } finally {
-    await prisma.$disconnect();
   }
 }

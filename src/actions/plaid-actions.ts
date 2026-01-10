@@ -11,7 +11,8 @@ import {
   CountryCode,
   Products,
 } from "plaid";
-import { PrismaClient, AccountType } from "@/generated/prisma";
+import { prisma } from "@/lib/db";
+import { AccountType } from "@/generated/prisma";
 import { getCurrentAppUser } from "./user-actions";
 
 // Initialize Plaid client
@@ -28,9 +29,6 @@ const configuration = new Configuration({
 
 const plaidClient = new PlaidApi(configuration);
 
-function getPrismaClient() {
-  return new PrismaClient();
-}
 
 async function getActiveFamilyId(): Promise<string | null> {
   const appUser = await getCurrentAppUser();
@@ -74,7 +72,7 @@ export async function exchangePublicToken(publicToken: string) {
     throw new Error("User not authenticated or no family found");
   }
 
-  const prisma = getPrismaClient();
+  
 
   try {
     // Exchange public token for access token
@@ -175,7 +173,6 @@ export async function exchangePublicToken(publicToken: string) {
     console.error("Error exchanging public token:", error);
     throw new Error("Failed to connect accounts");
   } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -188,7 +185,7 @@ export async function importTransactions(startDate?: Date, endDate?: Date) {
     throw new Error("User not authenticated or no family found");
   }
 
-  const prisma = getPrismaClient();
+  
 
   try {
     // Get all Plaid access tokens for this family
@@ -286,14 +283,14 @@ export async function importTransactions(startDate?: Date, endDate?: Date) {
             plaidSubcategory: transaction.category?.[0] || null,
             merchantLogo: transaction.logo_url || null,
             location: transaction.location ? {
-              address: transaction.location.address,
-              city: transaction.location.city,
-              region: transaction.location.region,
-              postal_code: transaction.location.postal_code,
-              country: transaction.location.country,
-              lat: transaction.location.lat,
-              lon: transaction.location.lon,
-            } : null,
+              address: transaction.location.address ?? undefined,
+              city: transaction.location.city ?? undefined,
+              region: transaction.location.region ?? undefined,
+              postal_code: transaction.location.postal_code ?? undefined,
+              country: transaction.location.country ?? undefined,
+              lat: transaction.location.lat ?? undefined,
+              lon: transaction.location.lon ?? undefined,
+            } : undefined,
             pending: transaction.pending,
             authorizedDate: transaction.authorized_date ? new Date(transaction.authorized_date) : null,
             iso_currency_code: transaction.iso_currency_code,
@@ -315,7 +312,6 @@ export async function importTransactions(startDate?: Date, endDate?: Date) {
     console.error("Error importing transactions:", error);
     throw new Error("Failed to import transactions");
   } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -328,7 +324,7 @@ export async function syncAccountBalances() {
     throw new Error("User not authenticated or no family found");
   }
 
-  const prisma = getPrismaClient();
+  
 
   try {
     // Get all Plaid access tokens for this family
@@ -386,7 +382,6 @@ export async function syncAccountBalances() {
     console.error("Error syncing account balances:", error);
     throw new Error("Failed to sync account balances");
   } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -399,7 +394,7 @@ export async function removeAllPlaidData() {
     throw new Error("User not authenticated or no family found");
   }
 
-  const prisma = getPrismaClient();
+  
 
   try {
     // Get all Plaid items for this family
@@ -463,6 +458,5 @@ export async function removeAllPlaidData() {
     console.error("Error removing Plaid data:", error);
     throw new Error("Failed to remove Plaid data");
   } finally {
-    await prisma.$disconnect();
   }
 }

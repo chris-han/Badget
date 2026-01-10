@@ -1,10 +1,7 @@
-import { PrismaClient } from "@/generated/prisma";
+import { prisma } from "@/lib/db";
 import { getCurrentAppUser } from "./user-actions";
 
 // Prisma client instantiation per request (best practice)
-function getPrismaClient() {
-  return new PrismaClient();
-}
 
 async function getActiveFamilyId(): Promise<string | null> {
   const appUser = await getCurrentAppUser();
@@ -66,7 +63,7 @@ export async function getFinancialOverview(): Promise<FinancialOverview> {
     throw new Error("User not authenticated or no family found");
   }
 
-  const prisma = getPrismaClient();
+  
 
   try {
     // Get current month date range
@@ -261,7 +258,6 @@ export async function getFinancialOverview(): Promise<FinancialOverview> {
     console.error("Error fetching financial overview:", error);
     throw new Error("Failed to fetch financial overview");
   } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -274,7 +270,7 @@ export async function getEnhancedAccounts(): Promise<EnhancedAccount[]> {
     return [];
   }
 
-  const prisma = getPrismaClient();
+  
 
   try {
     // Get all accounts with Plaid connection info
@@ -397,7 +393,6 @@ export async function getEnhancedAccounts(): Promise<EnhancedAccount[]> {
     console.error("Error fetching enhanced accounts:", error);
     return [];
   } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -410,7 +405,7 @@ export async function getFinancialAccountById(accountId: string) {
     return null;
   }
 
-  const prisma = getPrismaClient();
+  
 
   try {
     const account = await prisma.financialAccount.findFirst({
@@ -446,6 +441,5 @@ export async function getFinancialAccountById(accountId: string) {
     console.error("Error fetching account by ID:", error);
     return null;
   } finally {
-    await prisma.$disconnect();
   }
 }

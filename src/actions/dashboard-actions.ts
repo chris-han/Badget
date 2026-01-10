@@ -51,7 +51,7 @@
  * - Family-scoped queries ensure data isolation and performance
  */
 
-import { PrismaClient } from "@/generated/prisma";
+import { prisma } from "@/lib/db";
 import { getCurrentAppUser } from "./user-actions";
 import type {
   TransactionStatus,
@@ -62,9 +62,6 @@ import type {
 import { AssetType } from "@/generated/prisma";
 
 // Prisma client instantiation per request (best practice)
-function getPrismaClient() {
-  return new PrismaClient();
-}
 
 // Types for better TypeScript support
 type GetTransactionsOptions = {
@@ -135,7 +132,7 @@ export async function getAllTransactions(
     uncategorized,
   } = options;
 
-  const prisma = getPrismaClient();
+  
 
   try {
     // Build where clause with proper OR logic handling
@@ -251,7 +248,6 @@ export async function getAllTransactions(
       totalPages: 0,
     };
   } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -274,7 +270,7 @@ export async function getTransactions(options: GetTransactionsOptions = {}) {
     endDate,
   } = options;
 
-  const prisma = getPrismaClient();
+  
 
   try {
     const transactions = await prisma.transaction.findMany({
@@ -322,7 +318,6 @@ export async function getTransactions(options: GetTransactionsOptions = {}) {
     console.error("Error fetching transactions:", error);
     return [];
   } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -335,7 +330,7 @@ export async function getFinancialAccounts() {
     return [];
   }
 
-  const prisma = getPrismaClient();
+  
 
   try {
     const accounts = await prisma.financialAccount.findMany({
@@ -362,7 +357,6 @@ export async function getFinancialAccounts() {
     console.error("Error fetching financial accounts:", error);
     return [];
   } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -387,7 +381,7 @@ export async function getFinancialMetrics(): Promise<DashboardMetrics> {
     };
   }
 
-  const prisma = getPrismaClient();
+  
 
   try {
     // Get current month date range
@@ -502,7 +496,6 @@ export async function getFinancialMetrics(): Promise<DashboardMetrics> {
       },
     };
   } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -515,7 +508,7 @@ export async function getFinancialGoals() {
     return [];
   }
 
-  const prisma = getPrismaClient();
+  
 
   try {
     const goals = await prisma.goal.findMany({
@@ -551,7 +544,6 @@ export async function getFinancialGoals() {
     console.error("Error fetching financial goals:", error);
     return [];
   } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -564,7 +556,7 @@ export async function getCategories() {
     return [];
   }
 
-  const prisma = getPrismaClient();
+  
 
   try {
     const categories = await prisma.category.findMany({
@@ -588,7 +580,6 @@ export async function getCategories() {
     console.error("Error fetching categories:", error);
     return [];
   } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -601,7 +592,7 @@ export async function getSpendingTrends(months: number = 6) {
     return [];
   }
 
-  const prisma = getPrismaClient();
+  
 
   try {
     const endDate = new Date();
@@ -658,7 +649,6 @@ export async function getSpendingTrends(months: number = 6) {
     console.error("Error fetching spending trends:", error);
     return [];
   } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -700,7 +690,7 @@ export async function resetUserData() {
     throw new Error("User not authenticated");
   }
 
-  const prisma = getPrismaClient();
+  
 
   try {
     return await prisma.$transaction(async (tx) => {
@@ -729,7 +719,6 @@ export async function resetUserData() {
     console.error("Error resetting user data:", error);
     throw new Error("Failed to reset user data");
   } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -753,7 +742,7 @@ export async function seedUserData(resetFirst: boolean = false) {
     }
   }
 
-  const prisma = getPrismaClient();
+  
 
   try {
     return await prisma.$transaction(async (tx) => {
@@ -1157,7 +1146,6 @@ export async function seedUserData(resetFirst: boolean = false) {
     console.error("Error seeding user data:", error);
     throw new Error("Failed to seed user data");
   } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -1173,7 +1161,7 @@ export async function updateTransactionCategory(
     throw new Error("User not authenticated or no family found");
   }
 
-  const prisma = getPrismaClient();
+  
 
   try {
     // Verify the transaction belongs to the user's family
@@ -1243,6 +1231,5 @@ export async function updateTransactionCategory(
     console.error("Error updating transaction category:", error);
     throw error;
   } finally {
-    await prisma.$disconnect();
   }
 }
