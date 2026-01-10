@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { siteConfig } from "./config";
+import { siteInfo } from "./site-info";
 
 export const HOME_DOMAIN =
   process.env.NEXT_PUBLIC_VERCEL_ENV === "production"
@@ -17,8 +17,8 @@ export const APP_HOSTNAMES = new Set([
 ]);
 
 export function constructMetadata({
-  title = siteConfig.name,
-  description = siteConfig.description,
+  title = siteInfo.name,
+  description = siteInfo.description,
   image = `${HOME_DOMAIN}/opengraph-image`,
   icons = "/favicon.ico",
   noIndex = false,
@@ -36,7 +36,7 @@ export function constructMetadata({
       title,
       description,
       type: "website",
-      siteName: siteConfig.name,
+      siteName: siteInfo.name,
       images: [
         {
           url: image,

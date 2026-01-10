@@ -1,9 +1,9 @@
-import { siteConfig } from "@/lib/config";
+import { siteInfo } from "@/lib/site-info";
 import { Button } from "@/components/ui/button";
 import { Github, Twitter, MessageCircle, Instagram } from "lucide-react";
 
 export default function CommunityPage() {
-  const { discord, github, twitter, instagram } = siteConfig.links;
+  const { discord, github, twitter, instagram } = siteInfo.links;
 
   return (
     <main className="flex flex-col items-center justify-center w-full relative px-5 md:px-10 py-20">
