@@ -1,18 +1,18 @@
 # Using AI to Create a Budget
 
-Badget includes automated budgeting features powered by machine learning. These features analyze your transaction history and generate recommended spending plans.
+Loyalis includes automated budgeting features powered by machine learning. These features analyze your transaction history and generate recommended spending plans.
 
 ## Quick Start
 
 1. **Connect your accounts** – Use the Plaid integration to link your bank and credit card data.
 2. **Import transactions** – Transactions are categorized automatically using AI-driven pattern recognition.
-3. **Generate a budget** – From the dashboard, select "Create Budget" to let Badget build a smart spending plan.
+3. **Generate a budget** – From the dashboard, select "Create Budget" to let Loyalis build a smart spending plan.
 4. **Review recommendations** – Budgets adjust dynamically based on new data and your financial goals.
 5. **Track progress** – Monitor spending against AI suggestions and receive alerts when you're off track.
 
 ### How It Works
 
-Badget examines your historical transactions to identify spending patterns. It then provides:
+Loyalis examines your historical transactions to identify spending patterns. It then provides:
 
 - **Smart Budget Creation** – Budgets suggested from past spending habits.
 - **Dynamic Adjustments** – Real‑time budget recommendations as new transactions arrive.
@@ -23,7 +23,7 @@ These capabilities are outlined in the project vision in `README2.md`.
 
 ### Using Vercel AI
 
-Badget can leverage the Vercel AI SDK to run machine learning models in real time using **server actions**.
+Loyalis can leverage the Vercel AI SDK to run machine learning models in real time using **server actions**.
 
 1. Install the Vercel AI SDK: `pnpm add vercel-ai`
 2. Create a server action that sends prompts to your preferred model.
@@ -57,7 +57,7 @@ Each recommendation includes the average monthly spend and a slightly padded bud
 
 ### Advanced AI Features
 
-Badget's AI toolkit goes beyond basic budgeting. Additional server actions expose:
+Loyalis's AI toolkit goes beyond basic budgeting. Additional server actions expose:
 
 - **Anomaly Detection** – `detectTransactionAnomalies()` flags transactions that deviate from historical averages.
 - **Spending Forecasts** – `forecastCategorySpending()` predicts next month's expenses per category.

@@ -14,16 +14,16 @@ var authors = {
     name: "Christer Hagen",
     defaultTitle: "Founder & CEO",
     image: "/avatars/christer.jpg",
-    bio: "Founder of Badget, passionate about building tools that help people manage their digital life more effectively.",
+    bio: "Founder of Loyalis, passionate about building tools that help people manage their digital life more effectively.",
     twitter: "christerhagen",
     linkedin: "christerhagen"
   },
-  "badget-team": {
-    id: "badget-team",
-    name: "Badget Team",
+  "loyalis-team": {
+    id: "loyalis-team",
+    name: "Loyalis Team",
     defaultTitle: "Product Team",
     image: "/avatars/team.jpg",
-    bio: "The official Badget team account. Building the future of link management with AI-powered insights.",
+    bio: "The official Loyalis team account. Building the future of link management with AI-powered insights.",
     twitter: "badgetapp"
   },
   "sarah-johnson": {
@@ -31,7 +31,7 @@ var authors = {
     name: "Sarah Johnson",
     defaultTitle: "Product Manager",
     image: "/avatars/sarah.jpg",
-    bio: "Product Manager at Badget with 8+ years in analytics and data visualization. Passionate about turning data into actionable insights.",
+    bio: "Product Manager at Loyalis with 8+ years in analytics and data visualization. Passionate about turning data into actionable insights.",
     twitter: "sarahjdev"
   }
 };

@@ -2,7 +2,7 @@
 
 ## Overview
 
-Badget integrates with two major financial data providers to offer comprehensive banking connectivity across different regions:
+Loyalis integrates with two major financial data providers to offer comprehensive banking connectivity across different regions:
 
 - **Plaid**: Covers US, UK, and Canadian financial institutions
 - **GoCardless**: Covers European financial institutions (31 countries, 2,500+ banks)
@@ -34,7 +34,7 @@ User → Select Bank → Plaid Link → Bank Login → Account Selection → Suc
 // Step 1: Create Link Token
 const linkToken = await plaidClient.linkTokenCreate({
   user: { client_user_id: userId },
-  client_name: "Badget",
+  client_name: "Loyalis",
   products: ['transactions', 'accounts'],
   country_codes: ['US', 'GB', 'CA'],
   language: 'en',

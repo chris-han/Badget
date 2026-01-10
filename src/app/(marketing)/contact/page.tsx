@@ -18,7 +18,7 @@ export default function ContactPage() {
               How can we help?
             </h1>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Get in touch for support, feedback, or questions about Badget.
+              Get in touch for support, feedback, or questions about Loyalis.
             </p>
           </div>
 
@@ -84,7 +84,7 @@ export default function ContactPage() {
                 </div>
                 <h3 className="text-xl font-semibold mb-3">Developer Docs</h3>
                 <p className="text-muted-foreground mb-8">
-                  Read about Badget platform development and contribute to our
+                  Read about Loyalis platform development and contribute to our
                   codebase.
                 </p>
               </div>

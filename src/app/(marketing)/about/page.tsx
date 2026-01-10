@@ -1,5 +1,5 @@
 import { AboutHeroSection } from "@/components/sections/about-hero-section";
-import { WhatIsBadgetSection } from "@/components/sections/what-is-badget-section";
+import { WhatIsBadgetSection } from "@/components/sections/what-is-loyalis-section";
 import { FounderSection } from "@/components/sections/founder-section";
 import { MissionSection } from "@/components/sections/mission-section";
 import { CompanyCultureSection } from "@/components/sections/company-culture-section";

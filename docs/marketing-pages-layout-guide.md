@@ -1,6 +1,6 @@
 # Marketing Pages Layout Guide
 
-This guide explains how to create consistent marketing pages using Badget's design system, specifically focusing on the border styling and decorative elements.
+This guide explains how to create consistent marketing pages using Loyalis's design system, specifically focusing on the border styling and decorative elements.
 
 ## Layout Structure
 

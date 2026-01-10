@@ -1,6 +1,6 @@
 # Suggested Marketing Pages
 
-This document lists potential marketing pages for Badget. Each page should follow the existing marketing layout located at `src/app/(marketing)/layout.tsx` and use the global colors defined in `src/app/globals.css`.
+This document lists potential marketing pages for Loyalis. Each page should follow the existing marketing layout located at `src/app/(marketing)/layout.tsx` and use the global colors defined in `src/app/globals.css`.
 
 1. **About Us / Mission** – Overview of the company and team.
 2. **Blog / Resources** – Articles on personal finance tips, product updates and announcements.

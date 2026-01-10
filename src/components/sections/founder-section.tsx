@@ -39,7 +39,7 @@ export function FounderSection() {
                 <p className="text-muted-foreground text-lg leading-relaxed">
                   After struggling with traditional budgeting apps that
                   didn&apos;t work for families, I decided to build something
-                  better. Badget combines AI-powered insights with
+                  better. Loyalis combines AI-powered insights with
                   family-focused design to make financial management intuitive
                   and collaborative.
                 </p>

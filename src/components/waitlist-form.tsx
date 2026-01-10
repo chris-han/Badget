@@ -52,7 +52,7 @@ export function WaitlistForm() {
         <h3 className="text-xl font-medium">You&apos;re on the waitlist!</h3>
         <p className="text-muted-foreground">
           Thanks for joining! We&apos;ll keep you updated on our progress and
-          notify you when Badget is ready.
+          notify you when Loyalis is ready.
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
           <Button

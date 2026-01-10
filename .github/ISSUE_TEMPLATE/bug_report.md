@@ -1,6 +1,6 @@
 ---
 name: Bug Report
-about: Create a report to help us improve Badget
+about: Create a report to help us improve Loyalis
 title: '[BUG] '
 labels: bug
 assignees: ''

@@ -1,6 +1,6 @@
-"# Badget Design System & Styling Guide
+"# Loyalis Design System & Styling Guide
 
-> A comprehensive guide to the design system, component patterns, and styling conventions used throughout the Badget application.
+> A comprehensive guide to the design system, component patterns, and styling conventions used throughout the Loyalis application.
 
 ## Table of Contents
 
@@ -17,7 +17,7 @@
 ## 🎨 Core Design Principles
 
 ### Color System
-Badget uses a sophisticated **OKLCH color space** with CSS custom properties for consistent theming across light and dark modes.
+Loyalis uses a sophisticated **OKLCH color space** with CSS custom properties for consistent theming across light and dark modes.
 
 #### Light Theme Colors
 ```css
@@ -339,7 +339,7 @@ function CardContent({ className, ...props }) {
 ## 📱 Responsive Design Patterns
 
 ### Breakpoint System
-Badget follows a mobile-first approach with these breakpoints:
+Loyalis follows a mobile-first approach with these breakpoints:
 
 - **Mobile**: Base styles (no prefix) - `0px+`
 - **Small**: `sm:` - `640px+`
@@ -693,4 +693,4 @@ box-shadow: 0 0 0 3px rgb(var(--ring) / 0.5);
 - Leverage CSS custom properties for theme switching
 - Minimize animation complexity for smooth 60fps performance
 
-This styling guide ensures consistent, accessible, and maintainable design patterns throughout the Badget application. All measurements, colors, and patterns are derived from the actual codebase implementation. 
+This styling guide ensures consistent, accessible, and maintainable design patterns throughout the Loyalis application. All measurements, colors, and patterns are derived from the actual codebase implementation. 

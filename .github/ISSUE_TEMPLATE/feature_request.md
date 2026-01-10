@@ -1,13 +1,13 @@
 ---
 name: Feature Request
-about: Suggest an idea for Badget
+about: Suggest an idea for Loyalis
 title: '[FEATURE] '
 labels: enhancement
 assignees: ''
 ---
 
 ## Feature Summary
-A clear and concise description of the feature you'd like to see added to Badget.
+A clear and concise description of the feature you'd like to see added to Loyalis.
 
 ## Problem Statement
 Is your feature request related to a problem? Please describe.
@@ -42,7 +42,7 @@ What area of financial management does this feature address?
 
 ## Priority
 How important is this feature to you?
-- [ ] Critical - I can't use Badget effectively without this
+- [ ] Critical - I can't use Loyalis effectively without this
 - [ ] High - This would significantly improve my experience
 - [ ] Medium - This would be a nice addition
 - [ ] Low - This would be nice to have someday

@@ -1,5 +1,5 @@
 export const siteInfo = {
-  name: "Badget",
+  name: "Loyalis",
   description:
     "AI-powered personal finance app that turns raw transactions into real-time spending insights, predictive budgets & holistic financial health scores.",
   cta: "Get Started",
@@ -15,7 +15,7 @@ export const siteInfo = {
     "Expense Insights",
   ],
   links: {
-    email: "support@badget.tech",
+    email: "support@loyalis.tech",
     twitter: "https://tx.com/codehagen",
     discord: "https://discord.gg/TK7k6uY4",
     github: "https://github.com/codehagen",

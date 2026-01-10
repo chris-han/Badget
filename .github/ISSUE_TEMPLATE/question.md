@@ -1,13 +1,13 @@
 ---
 name: Question or Help
-about: Ask a question about Badget or get help with setup
+about: Ask a question about Loyalis or get help with setup
 title: '[QUESTION] '
 labels: question
 assignees: ''
 ---
 
 ## Question
-What would you like to know about Badget?
+What would you like to know about Loyalis?
 
 ## Context
 Provide any relevant context that might help us answer your question:

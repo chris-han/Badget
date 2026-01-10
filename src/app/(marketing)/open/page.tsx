@@ -31,7 +31,7 @@ export default function OpenStartupPage() {
       <GitHubStatsSection />
 
       <section className="w-full max-w-4xl space-y-4">
-        <h2 className="text-xl font-semibold text-center">Team Badget</h2>
+        <h2 className="text-xl font-semibold text-center">Team Loyalis</h2>
         <Table>
           <TableHeader>
             <TableRow>
