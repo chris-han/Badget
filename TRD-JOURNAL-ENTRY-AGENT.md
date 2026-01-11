@@ -1,10 +1,12 @@
 # Technical Requirements Document: Journal Entry Agent
 
-**Document Version:** 1.0
+**Document Version:** 2.0
 **Last Updated:** 2026-01-11
 **Product:** Loyalis - AI-Powered Financial Management Platform
 **Feature:** Journal Entry Agent for Automated Accounting
 **Related Documents:** PRD-JOURNAL-ENTRY-AGENT.md
+
+**🔄 v2.0 Update:** Migrated to **CopilotKit (Frontend) + Microsoft Agent Framework (Python Backend)** architecture
 
 ---
 
@@ -16,12 +18,13 @@
 4. [Database Design](#4-database-design)
 5. [API Design](#5-api-design)
 6. [AI Agent Implementation](#6-ai-agent-implementation)
-7. [Security & Authentication](#7-security--authentication)
-8. [Performance & Scalability](#8-performance--scalability)
-9. [Testing Strategy](#9-testing-strategy)
-10. [Deployment & DevOps](#10-deployment--devops)
-11. [Monitoring & Observability](#11-monitoring--observability)
-12. [Technical Risks & Mitigation](#12-technical-risks--mitigation)
+7. [Frontend Implementation (CopilotKit)](#7-frontend-implementation-copilotkit)
+8. [Security & Authentication](#8-security--authentication)
+9. [Performance & Scalability](#9-performance--scalability)
+10. [Testing Strategy](#10-testing-strategy)
+11. [Deployment & DevOps](#11-deployment--devops)
+12. [Monitoring & Observability](#12-monitoring--observability)
+13. [Technical Risks & Mitigation](#13-technical-risks--mitigation)
 
 ---
 
@@ -29,65 +32,85 @@
 
 ### 1.1 Purpose
 
-This TRD provides detailed technical specifications for implementing the AI-powered Journal Entry Agent within the Loyalis platform, ensuring alignment with existing architecture, coding standards, and design patterns.
+This TRD provides detailed technical specifications for implementing the AI-powered Journal Entry Agent within the Loyalis platform using **CopilotKit for frontend chat UI** and **Microsoft Agent Framework for backend AI orchestration**.
 
 ### 1.2 Scope
 
 This document covers:
-- **Backend Implementation:** Database schema, server actions, API routes
-- **Frontend Implementation:** UI components, state management, user interactions
-- **AI Integration:** LLM agent framework, tool orchestration, prompt engineering
-- **Infrastructure:** Deployment, monitoring, security considerations
+- **Backend Implementation (Python):** Microsoft Agent Framework, FastAPI, tool functions
+- **Frontend Implementation (Next.js):** CopilotKit integration, UI components, state management
+- **Database:** Prisma schema, PostgreSQL
+- **AI Integration:** Azure OpenAI / OpenAI, prompt engineering, function calling
+- **Infrastructure:** Dual deployment (Vercel + Python service), monitoring
 
 ### 1.3 Technical Constraints
 
 Based on `/home/chris/repo/Badget/README.md` and `/home/chris/repo/Badget/STYLING-GUIDE.md`:
 
-- **Framework:** Next.js 15 with App Router
-- **Package Manager:** Bun (not npm or yarn)
+- **Frontend Framework:** Next.js 15 with App Router
+- **Frontend Package Manager:** Bun (not npm or yarn)
+- **Backend Framework:** Python FastAPI with Microsoft Agent Framework
+- **Backend Package Manager:** UV (per constraints)
 - **Database:** PostgreSQL with Prisma ORM
-- **Authentication:** Better-auth
-- **UI Library:** shadcn/ui + Tailwind CSS
-- **Deployment:** Vercel
+- **Authentication:** Better-auth (Next.js) + JWT validation (Python)
+- **UI Library:** shadcn/ui + Tailwind CSS + **CopilotKit**
+- **Deployment:** Vercel (Next.js) + Cloud Run/Azure Container Apps (Python)
 - **Design System:** OKLCH color space, CVA for variants
 
 ---
 
 ## 2. Technology Stack
 
-### 2.1 Core Technologies
+### 2.1 Frontend Stack
 
 | Layer | Technology | Version | Purpose |
 |-------|-----------|---------|---------|
-| **Frontend** | Next.js | 15.x | React framework with App Router |
+| **Framework** | Next.js | 15.x | React framework with App Router |
 | **Runtime** | Bun | Latest | Package manager and runtime |
-| **Database** | PostgreSQL | 14+ | Primary data store via Neon |
-| **ORM** | Prisma | 5.x | Type-safe database access |
-| **Authentication** | Better-auth | Latest | User authentication |
+| **AI Chat UI** | **CopilotKit** | **Latest** | Pre-built copilot chat interface |
 | **UI Components** | shadcn/ui | Latest | Component library |
 | **Styling** | Tailwind CSS | 3.x | Utility-first CSS |
-| **AI Framework** | LangChain / Claude SDK | Latest | Agent orchestration |
-| **LLM Provider** | OpenAI GPT-4 / Claude Sonnet 4.5 | Latest | AI reasoning engine |
+| **Authentication** | Better-auth | Latest | User authentication |
+| **State Management** | React Query + Zustand | Latest | Server state & client state |
 
-### 2.2 AI & ML Stack
+### 2.2 Backend Stack (Python)
+
+| Layer | Technology | Version | Purpose |
+|-------|-----------|---------|---------|
+| **Framework** | FastAPI | 0.110+ | High-performance async API |
+| **Agent Framework** | **Microsoft Agent Framework** | **Latest** | AI agent orchestration |
+| **Package Manager** | **UV** | Latest | Python dependency management (per constraints) |
+| **LLM Provider** | Azure OpenAI / OpenAI | Latest | GPT-4 / Claude via unified API |
+| **Database Client** | Prisma Client Python / SQLAlchemy | Latest | ORM for Python |
+| **Validation** | Pydantic | 2.x | Data validation |
+
+### 2.3 Shared Infrastructure
+
+| Layer | Technology | Purpose |
+|-------|-----------|---------|
+| **Database** | PostgreSQL (Neon) | Primary data store |
+| **ORM** | Prisma (schema source of truth) | Type-safe database access |
+| **Cache** | Upstash Redis | Session cache, rate limiting |
+| **Monitoring** | Sentry + Azure Application Insights | Error tracking & observability |
+
+### 2.4 AI & ML Configuration
 
 ```typescript
-// Recommended AI stack configuration
+// Next.js environment configuration
 {
-  "primary_llm": "claude-sonnet-4-5", // Better Chinese support
-  "fallback_llm": "gpt-4-turbo",
-  "agent_framework": "langchain", // Or custom with Claude SDK
-  "embeddings": "text-embedding-3-small", // For future semantic search
-  "vector_store": null // Not required for v1.0
+  "frontend": {
+    "copilotkit_public_key": process.env.NEXT_PUBLIC_COPILOTKIT_KEY,
+    "backend_agent_url": process.env.NEXT_PUBLIC_AGENT_API_URL
+  },
+  "backend": {
+    "agent_framework": "microsoft-agent-framework",
+    "primary_llm": "gpt-4-turbo", // or Azure OpenAI
+    "fallback_llm": "gpt-3.5-turbo",
+    "max_tokens": 4000,
+    "temperature": 0.3
+  }
 }
 ```
-
-### 2.3 External Services
-
-- **Vercel:** Hosting and edge functions
-- **Neon:** Serverless PostgreSQL
-- **OpenAI / Anthropic:** LLM API providers
-- **Resend:** Email notifications (existing)
 
 ---
 
@@ -96,112 +119,182 @@ Based on `/home/chris/repo/Badget/README.md` and `/home/chris/repo/Badget/STYLIN
 ### 3.1 High-Level Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                     Client Layer (Browser)                   │
-│  Next.js 15 Client Components + shadcn/ui                   │
-└────────────────────────┬────────────────────────────────────┘
-                         │ HTTPS
-                         ▼
-┌─────────────────────────────────────────────────────────────┐
-│                  Next.js 15 App Router                       │
-│  ┌──────────────────────────────────────────────────────┐   │
-│  │  Route Handlers (/api/*)                             │   │
-│  │  - /api/agent/journal-entry (Agent endpoint)         │   │
-│  │  - /api/journal-entries (CRUD operations)            │   │
-│  └──────────────────────────────────────────────────────┘   │
-│  ┌──────────────────────────────────────────────────────┐   │
-│  │  Server Actions (src/actions/*)                      │   │
-│  │  - journal-entry-actions.ts                          │   │
-│  │  - chart-of-account-actions.ts                       │   │
-│  │  - use-case-template-actions.ts                      │   │
-│  └──────────────────────────────────────────────────────┘   │
-└────────────────────────┬────────────────────────────────────┘
-                         │
-                         ▼
-┌─────────────────────────────────────────────────────────────┐
-│                    AI Agent Layer                            │
-│  ┌──────────────────────────────────────────────────────┐   │
-│  │  JournalEntryAgent (LangChain/Claude SDK)            │   │
-│  │  - Conversation Management                           │   │
-│  │  - Intent Parsing                                    │   │
-│  │  - Tool Orchestration                                │   │
-│  │  - Response Generation                               │   │
-│  └──────────────────────────────────────────────────────┘   │
-│  ┌──────────────────────────────────────────────────────┐   │
-│  │  Tools (Function Calling)                            │   │
-│  │  - lookupAccount(query)                              │   │
-│  │  - getUseCaseCandidates(description, knownSide)      │   │
-│  │  - getJournalTemplate(useCaseId, params)             │   │
-│  │  - validateAndFinalizeEntry(journalDraft)            │   │
-│  └──────────────────────────────────────────────────────┘   │
-└────────────────────────┬────────────────────────────────────┘
-                         │
-                         ▼
-┌─────────────────────────────────────────────────────────────┐
-│                  Data Access Layer                           │
-│  Prisma ORM + PostgreSQL (Neon)                             │
-│  - ChartOfAccount                                            │
-│  - UseCaseTemplate                                           │
-│  - JournalEntry + JournalEntryLine                          │
-│  - Customer, Supplier, Department, etc.                     │
-└─────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                   Client Layer (Browser)                         │
+│  Next.js 15 Client Components + CopilotKit UI                   │
+└──────────────────────────┬──────────────────────────────────────┘
+                           │ HTTPS
+                           ▼
+┌─────────────────────────────────────────────────────────────────┐
+│              Next.js 15 App Router (Vercel)                      │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │  CopilotKit Backend Integration                           │  │
+│  │  - /api/copilotkit (proxy to Python agent)                │  │
+│  │  - Client-side CopilotKit provider                        │  │
+│  └───────────────────────────────────────────────────────────┘  │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │  Server Actions (src/actions/*)                           │  │
+│  │  - journal-entry-actions.ts                               │  │
+│  │  - chart-of-account-actions.ts                            │  │
+│  │  - use-case-template-actions.ts                           │  │
+│  └───────────────────────────────────────────────────────────┘  │
+└──────────────────────────┬──────────────────────────────────────┘
+                           │ HTTPS/gRPC
+                           ▼
+┌─────────────────────────────────────────────────────────────────┐
+│         Python Backend (FastAPI + Microsoft Agent Framework)    │
+│         Deployed on Azure Container Apps / Cloud Run            │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │  FastAPI Routes                                           │  │
+│  │  - /api/agent/chat (CopilotKit endpoint)                  │  │
+│  │  - /api/health (healthcheck)                              │  │
+│  └───────────────────────────────────────────────────────────┘  │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │  Microsoft Agent Framework                                │  │
+│  │  - JournalEntryAgent (orchestrator)                       │  │
+│  │  - ConversationManager                                    │  │
+│  │  - ToolRegistry                                           │  │
+│  └───────────────────────────────────────────────────────────┘  │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │  Tools (Function Calling)                                 │  │
+│  │  - lookup_account(query)                                  │  │
+│  │  - get_use_case_candidates(description, known_side)       │  │
+│  │  - get_journal_template(use_case_id, params)              │  │
+│  │  - validate_and_finalize_entry(journal_draft)             │  │
+│  └───────────────────────────────────────────────────────────┘  │
+└──────────────────────────┬──────────────────────────────────────┘
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    Data Access Layer                             │
+│  PostgreSQL (Neon) + Prisma ORM                                 │
+│  - ChartOfAccount                                                │
+│  - UseCaseTemplate                                               │
+│  - JournalEntry + JournalEntryLine                              │
+│  - Customer, Supplier, Department, etc.                         │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-### 3.2 Directory Structure
+### 3.2 CopilotKit Integration Flow
 
 ```
-src/
-├── actions/
-│   ├── journal-entry-actions.ts      # CRUD for journal entries
-│   ├── chart-of-account-actions.ts   # CoA lookups
-│   └── use-case-template-actions.ts  # Template management
-├── app/
-│   ├── api/
-│   │   └── agent/
-│   │       └── journal-entry/
-│   │           └── route.ts          # Agent API endpoint
-│   └── dashboard/
-│       ├── accounting/
-│       │   ├── journal-entries/
-│       │   │   ├── page.tsx          # Entry list page
-│       │   │   └── create/
-│       │   │       └── page.tsx      # AI-assisted entry creation
-│       │   └── chart-of-accounts/
-│       │       └── page.tsx          # CoA management
-│       └── layout.tsx
-├── components/
-│   ├── accounting/
-│   │   ├── journal-entry-form.tsx    # Manual entry form
-│   │   ├── ai-assistant-chat.tsx     # Agent conversation UI
-│   │   ├── entry-preview.tsx         # Entry preview/validation
-│   │   ├── auxiliary-selector.tsx    # Customer/supplier selection
-│   │   └── account-search.tsx        # Account lookup widget
-│   └── ui/                           # shadcn/ui components
-├── lib/
-│   ├── ai/
-│   │   ├── journal-entry-agent.ts    # Agent implementation
+┌─────────────────────────────────────────────────────────────────┐
+│  User Interface (Next.js Client)                                │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │  <CopilotKit runtimeUrl="/api/copilotkit">               │  │
+│  │    <CopilotSidebar>                                       │  │
+│  │      <!-- Journal Entry Creation UI -->                   │  │
+│  │      <InitialInputForm />                                 │  │
+│  │      <EntryPreviewTable />                                │  │
+│  │    </CopilotSidebar>                                      │  │
+│  │  </CopilotKit>                                            │  │
+│  └───────────────────────────────────────────────────────────┘  │
+└──────────────────────────┬──────────────────────────────────────┘
+                           │ User types: "收到客户张三的货款10000元"
+                           ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  Next.js API Route: /api/copilotkit                             │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │  1. Validate Better-auth session                          │  │
+│  │  2. Extract familyId from session                         │  │
+│  │  3. Proxy request to Python backend                       │  │
+│  │  4. Add authentication headers (JWT)                      │  │
+│  └───────────────────────────────────────────────────────────┘  │
+└──────────────────────────┬──────────────────────────────────────┘
+                           │ POST /api/agent/chat
+                           ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  Python Backend: FastAPI                                        │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │  1. Validate JWT token                                    │  │
+│  │  2. Initialize JournalEntryAgent with familyId            │  │
+│  │  3. Process message through Microsoft Agent Framework     │  │
+│  │  4. Agent calls tools (lookup_account, etc.)              │  │
+│  │  5. Return structured response                            │  │
+│  └───────────────────────────────────────────────────────────┘  │
+└──────────────────────────┬──────────────────────────────────────┘
+                           │ Response: Suggested entry JSON
+                           ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  CopilotSidebar renders AI response                             │
+│  - Shows suggested entry in preview table                       │
+│  - Prompts for auxiliary selections (customer)                  │
+│  - User confirms and posts entry                                │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 3.3 Directory Structure
+
+```
+loyalis/
+├── src/                              # Next.js frontend
+│   ├── actions/
+│   │   ├── journal-entry-actions.ts
+│   │   ├── chart-of-account-actions.ts
+│   │   └── use-case-template-actions.ts
+│   ├── app/
+│   │   ├── api/
+│   │   │   └── copilotkit/
+│   │   │       └── route.ts          # CopilotKit proxy to Python backend
+│   │   └── dashboard/
+│   │       └── accounting/
+│   │           └── journal-entries/
+│   │               ├── page.tsx      # Entry list
+│   │               └── create/
+│   │                   └── page.tsx  # AI-assisted creation with CopilotKit
+│   ├── components/
+│   │   ├── accounting/
+│   │   │   ├── journal-entry-form.tsx
+│   │   │   ├── entry-preview.tsx
+│   │   │   ├── auxiliary-selector.tsx
+│   │   │   └── copilot-wrapper.tsx   # CopilotKit configuration
+│   │   └── ui/                       # shadcn/ui components
+│   ├── lib/
+│   │   ├── db.ts                     # Prisma client
+│   │   ├── auth.ts                   # Better-auth
+│   │   └── utils.ts
+│   └── types/
+│       ├── journal-entry.ts
+│       └── agent-responses.ts
+│
+├── agent-backend/                    # Python backend (NEW)
+│   ├── pyproject.toml                # UV package config
+│   ├── requirements.txt
+│   ├── main.py                       # FastAPI app entry
+│   ├── app/
+│   │   ├── agents/
+│   │   │   ├── __init__.py
+│   │   │   ├── journal_entry_agent.py  # Microsoft Agent Framework agent
+│   │   │   └── prompts.py            # System prompts
 │   │   ├── tools/
-│   │   │   ├── lookup-account.ts
-│   │   │   ├── get-use-case-candidates.ts
-│   │   │   ├── get-journal-template.ts
-│   │   │   └── validate-entry.ts
-│   │   └── prompts/
-│   │       └── system-prompt.ts      # Agent system prompt
-│   ├── db.ts                         # Prisma client singleton
-│   └── utils.ts
-├── types/
-│   ├── journal-entry.ts
-│   ├── chart-of-account.ts
-│   └── use-case-template.ts
-└── generated/
-    └── prisma/                       # Generated Prisma client
-
-prisma/
-├── schema.prisma                     # Database schema
-├── migrations/                       # Migration history
-└── seed/
-    ├── chart-of-accounts.ts          # CoA seed data
-    └── use-case-templates.ts         # Template seed data
+│   │   │   ├── __init__.py
+│   │   │   ├── lookup_account.py
+│   │   │   ├── get_use_case_candidates.py
+│   │   │   ├── get_journal_template.py
+│   │   │   └── validate_entry.py
+│   │   ├── routers/
+│   │   │   ├── __init__.py
+│   │   │   ├── agent.py              # /api/agent/chat endpoint
+│   │   │   └── health.py
+│   │   ├── database/
+│   │   │   ├── __init__.py
+│   │   │   ├── client.py             # Database connection
+│   │   │   └── repositories.py       # Data access layer
+│   │   ├── auth/
+│   │   │   ├── __init__.py
+│   │   │   └── jwt_validator.py      # Validate Next.js JWT
+│   │   └── config.py                 # Environment config
+│   └── tests/
+│       ├── test_agents.py
+│       └── test_tools.py
+│
+├── prisma/
+│   ├── schema.prisma                 # Single source of truth
+│   └── migrations/
+│
+└── docker/
+    └── agent-backend/
+        └── Dockerfile                # Python backend container
 ```
 
 ---
@@ -210,486 +303,105 @@ prisma/
 
 ### 4.1 Prisma Schema Extensions
 
+*[Same as previous version - database schema remains unchanged]*
+
 Add the following models to `prisma/schema.prisma`:
 
 ```prisma
-// Existing models (Family, AppUser, etc.) remain unchanged
-
-// ============================================================================
-// Accounting Module - Chart of Accounts
-// ============================================================================
-
-model ChartOfAccount {
-  id                      String   @id @default(cuid())
-  familyId                String
-  family                  Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
-
-  // Bilingual Account Information (中英文双语科目信息)
-  accountCode             String   // e.g., "1002", "222101"
-  accountName             String   // Chinese name
-  accountNameEn           String?  // English name
-  accountCategory         String   // "asset" | "liability" | "equity" | "cost" | "revenue-expense"
-  parentCode              String?  // Hierarchical structure
-  level                   Int      // 1, 2, 3...
-  balanceDirection        String   // "debit" | "credit" | "neutral"
-
-  isLeaf                  Boolean  @default(true)
-  isQuantityAmount        Boolean  @default(false)
-  allowVoucherDirectPost  Boolean  @default(true)
-
-  // Auxiliary Accounting Flags (辅助核算标志)
-  auxCustomer             Boolean  @default(false)
-  auxSupplier             Boolean  @default(false)
-  auxDepartment           Boolean  @default(false)
-  auxProject              Boolean  @default(false)
-  auxInventory            Boolean  @default(false)
-
-  // VAT-specific (增值税专用字段)
-  isVATParent             Boolean  @default(false)
-  vatColumnType           String?  // "input" | "output" | "transfer-out" | "export-refund" | null
-
-  notes                   String?  @db.Text
-
-  createdAt               DateTime @default(now())
-  updatedAt               DateTime @updatedAt
-
-  @@unique([familyId, accountCode])
-  @@index([familyId, accountName])
-  @@map("chart_of_accounts")
-}
-
-// ============================================================================
-// Accounting Module - Use Case Templates
-// ============================================================================
-
-model UseCaseTemplate {
-  id                String   @id @default(cuid())
-  familyId          String?  // null = global template
-  family            Family?  @relation(fields: [familyId], references: [id], onDelete: Cascade)
-
-  // Bilingual Use Case Information
-  useCaseId         String   @unique
-  useCaseName       String   // Chinese name
-  useCaseNameEn     String?  // English name
-  industry          String[] // ["trading", "service", "manufacturing", "all"]
-
-  description       String   @db.Text
-  triggerKeywords   String[] // For matching algorithm
-
-  patternType       String   // "single-single" | "multi-single" | "single-multi" | "complex"
-  journalPatternJSON Json    // Template structure
-
-  vatHandling       String   @db.Text
-  auxRequirement    Json     // Required auxiliary dimensions
-  riskNote          String?  @db.Text
-
-  isActive          Boolean  @default(true)
-
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-
-  @@index([familyId])
-  @@index([useCaseId])
-  @@map("use_case_templates")
-}
-
-// ============================================================================
-// Accounting Module - Journal Entries
-// ============================================================================
-
-model JournalEntry {
-  id                String   @id @default(cuid())
-  familyId          String
-  family            Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
-
-  entryNumber       String   // Auto-generated sequential number
-  entryDate         DateTime
-  description       String   @db.Text
-
-  // AI metadata
-  useCaseId         String?  // Which template was used
-  aiGenerated       Boolean  @default(false)
-  aiConfidence      Float?
-  conversationLog   Json?    // Store agent conversation for audit
-
-  // Audit
-  createdBy         String   // AppUser ID
-  createdByUser     AppUser  @relation("CreatedJournalEntries", fields: [createdBy], references: [id])
-  approvedBy        String?
-  approvedByUser    AppUser? @relation("ApprovedJournalEntries", fields: [approvedBy], references: [id])
-  approvedAt        DateTime?
-
-  status            String   @default("draft") // "draft" | "posted" | "voided"
-
-  lines             JournalEntryLine[]
-
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-
-  @@unique([familyId, entryNumber])
-  @@index([familyId, entryDate])
-  @@index([familyId, status])
-  @@map("journal_entries")
-}
-
-model JournalEntryLine {
-  id              String        @id @default(cuid())
-  journalEntryId  String
-  journalEntry    JournalEntry  @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
-
-  lineNumber      Int           // Order within entry
-
-  side            String        // "debit" | "credit"
-  accountCode     String
-  accountName     String        // Denormalized for performance
-  amount          Decimal       @db.Decimal(15, 2)
-  currency        String        @default("CNY")
-
-  // VAT-specific
-  vatColumn       String?       // "input" | "output" | "transfer-out" | etc.
-
-  // Auxiliary dimensions (optional based on account requirements)
-  customerId      String?
-  supplierId      String?
-  departmentId    String?
-  projectId       String?
-  inventoryItemId String?
-
-  // Quantity tracking (if isQuantityAmount = true)
-  quantity        Decimal?      @db.Decimal(15, 4)
-  unit            String?
-  unitPrice       Decimal?      @db.Decimal(15, 4)
-
-  notes           String?       @db.Text
-
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-
-  @@index([journalEntryId])
-  @@map("journal_entry_lines")
-}
-
-// ============================================================================
-// Auxiliary Accounting Entities
-// ============================================================================
-
-model Customer {
-  id          String   @id @default(cuid())
-  familyId    String
-  family      Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
-
-  customerCode String
-  customerName String
-  contactName  String?
-  phone        String?
-  email        String?
-  address      String?
-
-  isActive     Boolean  @default(true)
-
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  @@unique([familyId, customerCode])
-  @@index([familyId, customerName])
-  @@map("customers")
-}
-
-model Supplier {
-  id           String   @id @default(cuid())
-  familyId     String
-  family       Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
-
-  supplierCode String
-  supplierName String
-  contactName  String?
-  phone        String?
-  email        String?
-  address      String?
-
-  isActive     Boolean  @default(true)
-
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  @@unique([familyId, supplierCode])
-  @@index([familyId, supplierName])
-  @@map("suppliers")
-}
-
-model Department {
-  id             String   @id @default(cuid())
-  familyId       String
-  family         Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
-
-  departmentCode String
-  departmentName String
-  parentId       String?
-  managerId      String?
-
-  isActive       Boolean  @default(true)
-
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  @@unique([familyId, departmentCode])
-  @@index([familyId])
-  @@map("departments")
-}
-
-model Project {
-  id          String   @id @default(cuid())
-  familyId    String
-  family      Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
-
-  projectCode String
-  projectName String
-  description String?  @db.Text
-  startDate   DateTime?
-  endDate     DateTime?
-  managerId   String?
-
-  isActive    Boolean  @default(true)
-
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@unique([familyId, projectCode])
-  @@index([familyId])
-  @@map("projects")
-}
-
-model InventoryItem {
-  id           String   @id @default(cuid())
-  familyId     String
-  family       Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
-
-  itemCode     String
-  itemName     String
-  category     String?
-  unit         String   @default("件")
-  unitPrice    Decimal? @db.Decimal(15, 2)
-
-  isActive     Boolean  @default(true)
-
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  @@unique([familyId, itemCode])
-  @@index([familyId, itemName])
-  @@map("inventory_items")
-}
-
-// ============================================================================
-// Update existing Family model to add relations
-// ============================================================================
-
-// Add to existing Family model:
-// chartOfAccounts  ChartOfAccount[]
-// useCaseTemplates UseCaseTemplate[]
-// journalEntries   JournalEntry[]
-// customers        Customer[]
-// suppliers        Supplier[]
-// departments      Department[]
-// projects         Project[]
-// inventoryItems   InventoryItem[]
-
-// ============================================================================
-// Update existing AppUser model to add relations
-// ============================================================================
-
-// Add to existing AppUser model:
-// createdJournalEntries  JournalEntry[] @relation("CreatedJournalEntries")
-// approvedJournalEntries JournalEntry[] @relation("ApprovedJournalEntries")
+// [IDENTICAL TO PREVIOUS VERSION]
+// ChartOfAccount, UseCaseTemplate, JournalEntry, JournalEntryLine,
+// Customer, Supplier, Department, Project, InventoryItem
+// See previous TRD v1.0 for full schema
 ```
 
-### 4.2 Migration Strategy
+**Key Point:** Prisma schema is shared between:
+- **Next.js:** Uses `@prisma/client` (TypeScript)
+- **Python Backend:** Uses `prisma-client-py` or raw SQL queries
 
-```bash
-# Generate migration
-bunx prisma migrate dev --name add_accounting_module
+### 4.2 Python Database Access
 
-# Generate Prisma client with custom output
-bunx prisma generate --output ../src/generated/prisma
+```python
+# agent-backend/app/database/client.py
 
-# Seed database with CoA and templates
-bun run prisma/seed/chart-of-accounts.ts
-bun run prisma/seed/use-case-templates.ts
-```
+from prisma import Prisma
+from typing import Optional
 
-### 4.3 Seed Data Scripts
+class DatabaseClient:
+    _instance: Optional[Prisma] = None
 
-Create seed scripts to populate initial data from Excel files:
+    @classmethod
+    async def get_instance(cls) -> Prisma:
+        if cls._instance is None:
+            cls._instance = Prisma()
+            await cls._instance.connect()
+        return cls._instance
 
-**`prisma/seed/chart-of-accounts.ts`:**
-```typescript
-import { PrismaClient } from "@/generated/prisma"
-import { readFile, utils } from "xlsx"
-
-const prisma = new PrismaClient()
-
-async function seedChartOfAccounts() {
-  // Read from /home/chris/repo/Badget/小企业科目表.xlsx
-  const workbook = readFile("/home/chris/repo/Badget/小企业科目表.xlsx")
-  const sheet = workbook.Sheets[workbook.SheetNames[0]]
-  const data = utils.sheet_to_json(sheet)
-
-  // Get a demo family or create one
-  const family = await prisma.family.findFirst()
-  if (!family) throw new Error("No family found - create one first")
-
-  for (const row of data) {
-    await prisma.chartOfAccount.upsert({
-      where: {
-        familyId_accountCode: {
-          familyId: family.id,
-          accountCode: row["AccountCode"],
-        },
-      },
-      update: {},
-      create: {
-        familyId: family.id,
-        accountCode: row["AccountCode"],
-        accountName: row["AccountName"],
-        accountNameEn: row["AccountNameEn"],
-        accountCategory: row["AccountCategory"],
-        parentCode: row["ParentCode"] || null,
-        level: parseInt(row["Level"]),
-        balanceDirection: row["BalanceDirection"],
-        isLeaf: row["IsLeaf"] === "Y",
-        isQuantityAmount: row["IsQuantityAmount"] === "Y",
-        allowVoucherDirectPost: row["AllowVoucherDirectPost"] === "Y",
-        auxCustomer: row["Aux_Customer"] === "Y",
-        auxSupplier: row["Aux_Supplier"] === "Y",
-        auxDepartment: row["Aux_Department"] === "Y",
-        auxProject: row["Aux_Project"] === "Y",
-        auxInventory: row["Aux_Inventory"] === "Y",
-        isVATParent: row["IsVATParent"] === "Y",
-        vatColumnType: row["VATColumnType"] || null,
-        notes: row["Notes"],
-      },
-    })
-  }
-
-  console.log("Chart of Accounts seeded successfully")
-}
-
-seedChartOfAccounts()
-  .catch((e) => {
-    console.error(e)
-    process.exit(1)
-  })
-  .finally(async () => {
-    await prisma.$disconnect()
-  })
+    @classmethod
+    async def close(cls):
+        if cls._instance:
+            await cls._instance.disconnect()
+            cls._instance = None
 ```
 
 ---
 
 ## 5. API Design
 
-### 5.1 Agent API Endpoint
+### 5.1 Frontend: CopilotKit Proxy API
 
-**Route:** `/api/agent/journal-entry`
+**Route:** `/api/copilotkit` (Next.js)
 **Method:** POST
-**Authentication:** Required (Better-auth session)
-
-**Request:**
-```typescript
-{
-  "familyId": string,
-  "userInput": string,
-  "conversationId"?: string, // For multi-turn conversations
-  "context"?: {
-    "knownSide"?: {
-      "side": "debit" | "credit",
-      "accountCode": string,
-      "amount": number
-    }
-  }
-}
-```
-
-**Response:**
-```typescript
-{
-  "conversationId": string,
-  "agentMessage": string,
-  "messageType": "question" | "suggestion" | "validation" | "error",
-  "data"?: {
-    "suggestedEntry"?: {
-      "lines": Array<{
-        "side": "debit" | "credit",
-        "accountCode": string,
-        "accountName": string,
-        "amount": number,
-        "vatColumn"?: string,
-        "auxToFill"?: string[] // ["customer", "supplier", etc.]
-      }>,
-      "useCaseId": string,
-      "useCaseName": string,
-      "confidence": number,
-      "explanation": string
-    },
-    "validationResult"?: {
-      "isValid": boolean,
-      "errors": string[],
-      "warnings": string[]
-    },
-    "options"?: Array<{
-      "label": string,
-      "value": string
-    }>
-  }
-}
-```
-
-**Implementation:** `/src/app/api/agent/journal-entry/route.ts`
+**Purpose:** Proxy CopilotKit requests to Python backend
 
 ```typescript
+// src/app/api/copilotkit/route.ts
+
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
-import { JournalEntryAgent } from "@/lib/ai/journal-entry-agent"
-import { rateLimit } from "@/lib/rate-limit"
+import { sign } from "jsonwebtoken"
 
 export async function POST(req: NextRequest) {
   try {
-    // 1. Authentication
+    // 1. Authenticate user with Better-auth
     const session = await auth.api.getSession({ headers: req.headers })
-    if (!session) {
+    if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    // 2. Rate limiting
-    const rateLimitResult = await rateLimit(session.user.id, 100) // 100 calls/hour
-    if (!rateLimitResult.success) {
-      return NextResponse.json(
-        { error: "Rate limit exceeded" },
-        { status: 429 }
-      )
-    }
+    // 2. Get familyId from user context
+    // TODO: Implement family selection logic
+    const familyId = req.headers.get("x-family-id") || "default"
 
-    // 3. Parse request
+    // 3. Create JWT for Python backend
+    const token = sign(
+      {
+        userId: session.user.id,
+        familyId: familyId,
+        email: session.user.email,
+      },
+      process.env.JWT_SECRET!,
+      { expiresIn: "1h" }
+    )
+
+    // 4. Parse CopilotKit request
     const body = await req.json()
-    const { familyId, userInput, conversationId, context } = body
 
-    // 4. Verify family access
-    // TODO: Check if user has access to this family
-
-    // 5. Initialize agent
-    const agent = new JournalEntryAgent(familyId)
-
-    // 6. Process message
-    const response = await agent.processMessage({
-      userInput,
-      conversationId,
-      context,
+    // 5. Forward to Python backend
+    const backendUrl = process.env.AGENT_BACKEND_URL || "http://localhost:8000"
+    const response = await fetch(`${backendUrl}/api/agent/chat`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+        "X-Family-Id": familyId,
+      },
+      body: JSON.stringify(body),
     })
 
-    // 7. Return response
-    return NextResponse.json(response)
+    const data = await response.json()
+    return NextResponse.json(data)
   } catch (error) {
-    console.error("Agent API error:", error)
+    console.error("CopilotKit proxy error:", error)
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -698,396 +410,285 @@ export async function POST(req: NextRequest) {
 }
 ```
 
-### 5.2 Server Actions
+### 5.2 Backend: Python Agent API
 
-**`src/actions/journal-entry-actions.ts`:**
-```typescript
-"use server"
+**Route:** `/api/agent/chat` (Python FastAPI)
+**Method:** POST
+**Purpose:** Process CopilotKit chat requests with Microsoft Agent Framework
 
-import { auth } from "@/lib/auth"
-import { db } from "@/lib/db"
-import { revalidatePath } from "next/cache"
+```python
+# agent-backend/app/routers/agent.py
 
-export async function createJournalEntry(data: {
-  familyId: string
-  entryDate: Date
-  description: string
-  lines: Array<{
-    side: "debit" | "credit"
-    accountCode: string
-    amount: number
-    vatColumn?: string
-    aux?: {
-      customerId?: string
-      supplierId?: string
-      departmentId?: string
-      projectId?: string
-      inventoryItemId?: string
-    }
-  }>
-  useCaseId?: string
-  aiGenerated?: boolean
-  aiConfidence?: number
-  conversationLog?: any
-}) {
-  const session = await auth()
-  if (!session?.user) throw new Error("Unauthorized")
+from fastapi import APIRouter, Depends, HTTPException, Header
+from pydantic import BaseModel
+from typing import List, Optional, Dict, Any
+from app.agents.journal_entry_agent import JournalEntryAgent
+from app.auth.jwt_validator import verify_token
 
-  // Validate access to family
-  // TODO: Check family membership
+router = APIRouter()
 
-  // Generate entry number
-  const lastEntry = await db.journalEntry.findFirst({
-    where: { familyId: data.familyId },
-    orderBy: { entryNumber: "desc" },
-  })
-  const nextNumber = generateNextEntryNumber(lastEntry?.entryNumber)
+class CopilotMessage(BaseModel):
+    role: str  # "user" | "assistant" | "system"
+    content: str
 
-  // Create entry with lines
-  const entry = await db.journalEntry.create({
-    data: {
-      familyId: data.familyId,
-      entryNumber: nextNumber,
-      entryDate: data.entryDate,
-      description: data.description,
-      useCaseId: data.useCaseId,
-      aiGenerated: data.aiGenerated || false,
-      aiConfidence: data.aiConfidence,
-      conversationLog: data.conversationLog,
-      createdBy: session.user.id,
-      status: "draft",
-      lines: {
-        create: data.lines.map((line, idx) => ({
-          lineNumber: idx + 1,
-          side: line.side,
-          accountCode: line.accountCode,
-          accountName: "", // TODO: Lookup from CoA
-          amount: line.amount,
-          vatColumn: line.vatColumn,
-          customerId: line.aux?.customerId,
-          supplierId: line.aux?.supplierId,
-          departmentId: line.aux?.departmentId,
-          projectId: line.aux?.projectId,
-          inventoryItemId: line.aux?.inventoryItemId,
-        })),
-      },
-    },
-    include: {
-      lines: true,
-    },
-  })
+class CopilotChatRequest(BaseModel):
+    messages: List[CopilotMessage]
+    threadId: Optional[str] = None
+    context: Optional[Dict[str, Any]] = None
 
-  revalidatePath("/dashboard/accounting/journal-entries")
-  return entry
-}
+class CopilotChatResponse(BaseModel):
+    message: str
+    data: Optional[Dict[str, Any]] = None
+    threadId: str
 
-export async function postJournalEntry(entryId: string) {
-  const session = await auth()
-  if (!session?.user) throw new Error("Unauthorized")
+@router.post("/chat", response_model=CopilotChatResponse)
+async def chat_with_agent(
+    request: CopilotChatRequest,
+    authorization: str = Header(...),
+    x_family_id: str = Header(..., alias="X-Family-Id")
+):
+    """
+    CopilotKit chat endpoint for Journal Entry Agent.
 
-  // Update status to posted
-  const entry = await db.journalEntry.update({
-    where: { id: entryId },
-    data: {
-      status: "posted",
-      approvedBy: session.user.id,
-      approvedAt: new Date(),
-    },
-  })
+    This endpoint is called by the Next.js frontend via CopilotKit.
+    """
+    try:
+        # 1. Verify JWT token
+        token = authorization.replace("Bearer ", "")
+        payload = verify_token(token)
+        user_id = payload["userId"]
 
-  revalidatePath("/dashboard/accounting/journal-entries")
-  return entry
-}
+        # 2. Initialize agent
+        agent = JournalEntryAgent(
+            family_id=x_family_id,
+            user_id=user_id
+        )
 
-function generateNextEntryNumber(lastNumber?: string): string {
-  const today = new Date()
-  const year = today.getFullYear()
-  const month = String(today.getMonth() + 1).padStart(2, "0")
-  const prefix = `JE-${year}${month}-`
+        # 3. Get latest user message
+        user_message = next(
+            (msg.content for msg in reversed(request.messages) if msg.role == "user"),
+            None
+        )
 
-  if (!lastNumber || !lastNumber.startsWith(prefix)) {
-    return `${prefix}0001`
-  }
+        if not user_message:
+            raise HTTPException(status_code=400, detail="No user message found")
 
-  const lastSeq = parseInt(lastNumber.split("-")[2])
-  const nextSeq = String(lastSeq + 1).padStart(4, "0")
-  return `${prefix}${nextSeq}`
-}
-```
+        # 4. Process with Microsoft Agent Framework
+        response = await agent.process_message(
+            message=user_message,
+            thread_id=request.threadId,
+            context=request.context or {}
+        )
 
-**`src/actions/chart-of-account-actions.ts`:**
-```typescript
-"use server"
+        # 5. Return CopilotKit-compatible response
+        return CopilotChatResponse(
+            message=response["message"],
+            data=response.get("data"),
+            threadId=response["threadId"]
+        )
 
-import { auth } from "@/lib/auth"
-import { db } from "@/lib/db"
-
-export async function lookupAccount(familyId: string, query: string) {
-  const session = await auth()
-  if (!session?.user) throw new Error("Unauthorized")
-
-  // Exact match on code
-  if (/^\d{4,6}$/.test(query)) {
-    const account = await db.chartOfAccount.findFirst({
-      where: { familyId, accountCode: query },
-    })
-    if (account) return { matches: [account] }
-  }
-
-  // Exact match on name
-  const exactMatch = await db.chartOfAccount.findFirst({
-    where: { familyId, accountName: query },
-  })
-  if (exactMatch) return { matches: [exactMatch] }
-
-  // Fuzzy match
-  const fuzzyMatches = await db.chartOfAccount.findMany({
-    where: {
-      familyId,
-      OR: [
-        { accountName: { contains: query } },
-        { accountNameEn: { contains: query } },
-      ],
-    },
-    take: 5,
-  })
-
-  return { matches: fuzzyMatches }
-}
-
-export async function getChartOfAccounts(familyId: string) {
-  const session = await auth()
-  if (!session?.user) throw new Error("Unauthorized")
-
-  const accounts = await db.chartOfAccount.findMany({
-    where: { familyId },
-    orderBy: { accountCode: "asc" },
-  })
-
-  return accounts
-}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 ```
 
 ---
 
 ## 6. AI Agent Implementation
 
-### 6.1 Agent Architecture
+### 6.1 Microsoft Agent Framework Setup
 
-Use **LangChain** for structured agent development:
+```python
+# agent-backend/app/agents/journal_entry_agent.py
 
-```typescript
-// src/lib/ai/journal-entry-agent.ts
+from azure.ai.agents import Agent, ToolRegistry, ConversationManager
+from azure.ai.openai import AzureOpenAI
+from typing import Dict, Any, Optional
+import uuid
+from app.tools.lookup_account import LookupAccountTool
+from app.tools.get_use_case_candidates import GetUseCaseCandidatesTool
+from app.tools.get_journal_template import GetJournalTemplateTool
+from app.tools.validate_entry import ValidateEntryTool
+from app.agents.prompts import SYSTEM_PROMPT
 
-import { ChatOpenAI } from "@langchain/openai"
-import { AgentExecutor, createOpenAIFunctionsAgent } from "langchain/agents"
-import { ChatPromptTemplate } from "@langchain/core/prompts"
-import { DynamicStructuredTool } from "@langchain/core/tools"
-import { z } from "zod"
+class JournalEntryAgent:
+    """
+    Journal Entry Agent using Microsoft Agent Framework.
 
-import { SYSTEM_PROMPT } from "./prompts/system-prompt"
-import { lookupAccountTool } from "./tools/lookup-account"
-import { getUseCaseCandidatesTool } from "./tools/get-use-case-candidates"
-import { getJournalTemplateTool } from "./tools/get-journal-template"
-import { validateEntryTool } from "./tools/validate-entry"
+    Handles conversational AI for creating accounting journal entries.
+    """
 
-export class JournalEntryAgent {
-  private familyId: string
-  private llm: ChatOpenAI
-  private agent: AgentExecutor
-  private conversations: Map<string, any[]> = new Map()
+    def __init__(self, family_id: str, user_id: str):
+        self.family_id = family_id
+        self.user_id = user_id
 
-  constructor(familyId: string) {
-    this.familyId = familyId
-
-    // Initialize LLM
-    this.llm = new ChatOpenAI({
-      modelName: "gpt-4-turbo", // or "claude-sonnet-4-5"
-      temperature: 0.3, // Lower for deterministic accounting logic
-      apiKey: process.env.OPENAI_API_KEY,
-    })
-
-    // Initialize tools
-    const tools = [
-      lookupAccountTool(familyId),
-      getUseCaseCandidatesTool(familyId),
-      getJournalTemplateTool(familyId),
-      validateEntryTool(familyId),
-    ]
-
-    // Create agent
-    const prompt = ChatPromptTemplate.fromMessages([
-      ["system", SYSTEM_PROMPT],
-      ["human", "{input}"],
-      ["placeholder", "{agent_scratchpad}"],
-    ])
-
-    this.agent = createOpenAIFunctionsAgent({
-      llm: this.llm,
-      tools,
-      prompt,
-    })
-  }
-
-  async processMessage(params: {
-    userInput: string
-    conversationId?: string
-    context?: any
-  }) {
-    const { userInput, conversationId, context } = params
-
-    // Get or create conversation history
-    const convId = conversationId || this.generateConversationId()
-    const history = this.conversations.get(convId) || []
-
-    // Execute agent
-    const result = await this.agent.invoke({
-      input: userInput,
-      chat_history: history,
-      familyId: this.familyId,
-      context: JSON.stringify(context || {}),
-    })
-
-    // Update conversation history
-    history.push({ human: userInput, ai: result.output })
-    this.conversations.set(convId, history)
-
-    // Parse result and format response
-    return this.formatResponse(result, convId)
-  }
-
-  private formatResponse(result: any, conversationId: string) {
-    // TODO: Parse agent output and structure response
-    return {
-      conversationId,
-      agentMessage: result.output,
-      messageType: "suggestion",
-      data: {},
-    }
-  }
-
-  private generateConversationId(): string {
-    return `conv_${Date.now()}_${Math.random().toString(36).substring(7)}`
-  }
-}
-```
-
-### 6.2 Tool Implementations
-
-**`src/lib/ai/tools/lookup-account.ts`:**
-```typescript
-import { DynamicStructuredTool } from "@langchain/core/tools"
-import { z } from "zod"
-import { lookupAccount } from "@/actions/chart-of-account-actions"
-
-export function lookupAccountTool(familyId: string) {
-  return new DynamicStructuredTool({
-    name: "lookup_account",
-    description:
-      "Look up account information from the Chart of Accounts by name or code. Supports fuzzy matching.",
-    schema: z.object({
-      query: z
-        .string()
-        .describe(
-          "Account name (Chinese) or account code to search for. E.g., '银行存款', '1002', 'bank'"
-        ),
-    }),
-    func: async ({ query }) => {
-      const result = await lookupAccount(familyId, query)
-      return JSON.stringify(result)
-    },
-  })
-}
-```
-
-**`src/lib/ai/tools/get-use-case-candidates.ts`:**
-```typescript
-import { DynamicStructuredTool } from "@langchain/core/tools"
-import { z } from "zod"
-import { db } from "@/lib/db"
-
-export function getUseCaseCandidatesTool(familyId: string) {
-  return new DynamicStructuredTool({
-    name: "get_use_case_candidates",
-    description:
-      "Find matching business scenario templates based on user description and known journal entry side.",
-    schema: z.object({
-      text: z
-        .string()
-        .describe(
-          "User's description of the transaction. E.g., '客户付货款', 'purchased inventory'"
-        ),
-      knownSide: z.object({
-        side: z.enum(["debit", "credit"]),
-        accountCode: z.string(),
-        amount: z.number().optional(),
-      }),
-    }),
-    func: async ({ text, knownSide }) => {
-      // Get use cases for this family's industry
-      const family = await db.family.findUnique({
-        where: { id: familyId },
-        select: { industry: true },
-      })
-
-      const useCases = await db.useCaseTemplate.findMany({
-        where: {
-          OR: [
-            { familyId: familyId },
-            { familyId: null }, // Global templates
-          ],
-          industry: {
-            hasSome: [family?.industry || "all", "all"],
-          },
-        },
-      })
-
-      // Score use cases based on keyword match
-      const scored = useCases.map((uc) => {
-        let score = 0
-
-        // Keyword matching
-        const textLower = text.toLowerCase()
-        uc.triggerKeywords.forEach((kw) => {
-          if (textLower.includes(kw.toLowerCase())) {
-            score += 1
-          }
-        })
-
-        // Account type matching
-        const templateJSON = uc.journalPatternJSON as any
-        const hasMatchingAccount = templateJSON.lines?.some(
-          (line: any) => line.account === knownSide.accountCode
+        # Initialize Azure OpenAI client
+        self.client = AzureOpenAI(
+            api_key=os.getenv("AZURE_OPENAI_API_KEY"),
+            api_version="2024-02-01",
+            azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT")
         )
-        if (hasMatchingAccount) score += 2
 
-        const confidence = Math.min(score / 5, 1)
+        # Initialize tool registry
+        self.tools = ToolRegistry()
+        self._register_tools()
+
+        # Initialize agent
+        self.agent = Agent(
+            name="JournalEntryAgent",
+            instructions=SYSTEM_PROMPT,
+            model="gpt-4-turbo",
+            tools=self.tools,
+            client=self.client
+        )
+
+        # Conversation manager
+        self.conversation_manager = ConversationManager()
+
+    def _register_tools(self):
+        """Register all accounting tools with the agent."""
+        self.tools.register(LookupAccountTool(self.family_id))
+        self.tools.register(GetUseCaseCandidatesTool(self.family_id))
+        self.tools.register(GetJournalTemplateTool(self.family_id))
+        self.tools.register(ValidateEntryTool(self.family_id))
+
+    async def process_message(
+        self,
+        message: str,
+        thread_id: Optional[str] = None,
+        context: Dict[str, Any] = {}
+    ) -> Dict[str, Any]:
+        """
+        Process user message through Microsoft Agent Framework.
+
+        Args:
+            message: User's input message
+            thread_id: Optional conversation thread ID
+            context: Additional context (e.g., known entry side)
+
+        Returns:
+            Dict containing agent response and any structured data
+        """
+        # Create or retrieve conversation thread
+        if thread_id:
+            thread = self.conversation_manager.get_thread(thread_id)
+        else:
+            thread_id = f"thread_{uuid.uuid4().hex}"
+            thread = self.conversation_manager.create_thread(thread_id)
+
+        # Add user message to thread
+        thread.add_message(role="user", content=message)
+
+        # Inject context if provided
+        if context:
+            context_msg = f"Context: {json.dumps(context)}"
+            thread.add_message(role="system", content=context_msg)
+
+        # Run agent
+        run = self.agent.create_run(thread=thread)
+        result = await run.wait_for_completion()
+
+        # Parse agent response
+        agent_message = result.messages[-1].content
+
+        # Extract structured data from tool calls
+        structured_data = self._extract_tool_results(result)
 
         return {
-          useCaseId: uc.useCaseId,
-          useCaseName: uc.useCaseName,
-          confidence,
-          reason: `Matched ${score} signals`,
+            "message": agent_message,
+            "data": structured_data,
+            "threadId": thread_id
         }
-      })
 
-      // Sort and return top candidates
-      const sorted = scored
-        .filter((s) => s.confidence > 0.1)
-        .sort((a, b) => b.confidence - a.confidence)
-        .slice(0, 3)
+    def _extract_tool_results(self, run_result) -> Optional[Dict[str, Any]]:
+        """Extract structured data from tool call results."""
+        # Check if agent called get_journal_template tool
+        for step in run_result.steps:
+            if step.type == "tool_calls":
+                for tool_call in step.tool_calls:
+                    if tool_call.function.name == "get_journal_template":
+                        return json.loads(tool_call.function.output)
+        return None
+```
 
-      return JSON.stringify({ candidates: sorted })
-    },
-  })
-}
+### 6.2 Tool Implementation Example
+
+```python
+# agent-backend/app/tools/lookup_account.py
+
+from azure.ai.agents import Tool, ToolParameter
+from app.database.repositories import ChartOfAccountRepository
+from typing import List, Dict, Any
+
+class LookupAccountTool(Tool):
+    """Tool for looking up Chart of Accounts."""
+
+    def __init__(self, family_id: str):
+        self.family_id = family_id
+        self.repo = ChartOfAccountRepository()
+
+        super().__init__(
+            name="lookup_account",
+            description=(
+                "Look up account information from the Chart of Accounts by name or code. "
+                "Supports fuzzy matching on Chinese and English names."
+            ),
+            parameters=[
+                ToolParameter(
+                    name="query",
+                    type="string",
+                    description=(
+                        "Account name (Chinese or English) or account code to search for. "
+                        "Examples: '银行存款', '1002', 'Bank Deposits'"
+                    ),
+                    required=True
+                )
+            ]
+        )
+
+    async def execute(self, query: str) -> List[Dict[str, Any]]:
+        """Execute account lookup."""
+        # Check if query is numeric (account code)
+        if query.isdigit() and len(query) >= 4:
+            accounts = await self.repo.find_by_code(self.family_id, query)
+            if accounts:
+                return self._format_results(accounts)
+
+        # Exact match on name
+        accounts = await self.repo.find_by_name_exact(self.family_id, query)
+        if accounts:
+            return self._format_results(accounts)
+
+        # Fuzzy match
+        accounts = await self.repo.find_by_name_fuzzy(self.family_id, query)
+        return self._format_results(accounts[:5])  # Top 5 matches
+
+    def _format_results(self, accounts) -> List[Dict[str, Any]]:
+        """Format account data for agent consumption."""
+        return [
+            {
+                "accountCode": acc.account_code,
+                "accountName": acc.account_name,
+                "accountNameEn": acc.account_name_en,
+                "balanceDirection": acc.balance_direction,
+                "auxDimensions": {
+                    "customer": acc.aux_customer,
+                    "supplier": acc.aux_supplier,
+                    "department": acc.aux_department,
+                    "project": acc.aux_project,
+                    "inventory": acc.aux_inventory,
+                },
+                "vatColumnType": acc.vat_column_type
+            }
+            for acc in accounts
+        ]
 ```
 
 ### 6.3 System Prompt
 
-**`src/lib/ai/prompts/system-prompt.ts`:**
-```typescript
-export const SYSTEM_PROMPT = `
+```python
+# agent-backend/app/agents/prompts.py
+
+SYSTEM_PROMPT = """
 # 角色和上下文 (Role and Context)
 
 你是一名专业的会计助理,为中国的小企业提供服务。
@@ -1099,613 +700,719 @@ Accounting Standards (小企业会计准则) and VAT regulations.
 
 # 你的能力 (Your Capabilities)
 
-- 你可以访问公司的会计科目表 (Chart of Accounts)
-- 你可以通过名称或编码查找科目
-- 你了解30多种常见业务场景 (use cases)
-- 你可以生成平衡的会计分录,并正确处理增值税
-- 你可以验证分录的合规性和完整性
+You have access to the following tools:
+- **lookup_account**: Find accounts in the Chart of Accounts by code or name
+- **get_use_case_candidates**: Match user's transaction description to business scenarios
+- **get_journal_template**: Generate journal entry lines based on matched scenario
+- **validate_entry**: Validate complete journal entry for compliance
 
 # 你的约束 (Your Constraints)
 
-- 你只能使用公司会计科目表中存在的科目
-- 你不能创建或修改科目
-- 你必须确保每笔分录借贷平衡
-- 你必须遵守增值税多栏账规则
-- 你必须收集必要的辅助核算信息(客户、供应商等)
+- You can ONLY use accounts that exist in the company's Chart of Accounts
+- You CANNOT create or modify accounts
+- You MUST ensure every entry is balanced (debits = credits)
+- You MUST follow VAT multi-column ledger rules (财会〔2016〕22号)
+- You MUST collect required auxiliary information (customer, supplier, etc.)
 
 # 工作流程 (Workflow)
 
-当用户提供部分凭证信息时:
+When a user describes a transaction:
 
-1. **解析输入**
-   - 提取已知方(借或贷)、科目、金额
-   - 提取业务描述
+1. **Parse Input**
+   - Extract known side (debit/credit), account, amount
+   - Extract transaction description
 
-2. **需要时澄清**
-   - 如果业务场景不明确,提出1-2个澄清问题
-   - 示例: "这是客户付款还是预收款?"
-   - 保持问题简单明了
+2. **Clarify if Needed**
+   - If scenario is ambiguous, ask 1-2 focused questions
+   - Example: "这是客户付款还是预收款?" (Is this customer payment or advance?)
 
-3. **识别业务场景**
-   - 调用 get_use_case_candidates 工具
-   - 如果最佳匹配置信度 > 0.8,继续
-   - 如果有多个候选(置信度0.5-0.8),向用户展示选项
+3. **Identify Scenario**
+   - Call `get_use_case_candidates` with description
+   - If confidence > 0.8, proceed
+   - If multiple matches (0.5-0.8), present options
 
-4. **生成分录**
-   - 调用 get_journal_template 工具
-   - 向用户展示完整分录
-   - 解释将借记/贷记哪些科目及原因
+4. **Generate Entry**
+   - Call `get_journal_template` with selected scenario
+   - Present complete entry to user
+   - Explain which accounts and why
 
-5. **收集辅助信息**
-   - 如果科目需要客户、供应商、部门等信息,要求用户选择
-   - 解释为什么需要这些信息
+5. **Collect Auxiliary Info**
+   - If account requires customer/supplier/etc., prompt user
+   - Use structured format: "Please select the customer for this payment"
 
-6. **验证**
-   - 调用 validate_entry 工具
-   - 如果验证失败,清楚解释问题并建议修正
-   - 如果验证通过,确认分录可以过账
+6. **Validate**
+   - Call `validate_entry` with complete draft
+   - If failed, explain issue clearly
+   - If passed, confirm ready to post
 
-# 语气和风格 (Tone and Style)
+# 输出格式 (Output Format)
 
-- 专业但友好
-- 正确使用会计术语,必要时解释
-- 简洁明了 - 除非被要求,否则避免冗长解释
-- 始终解释你的推理(使用了哪个模板,为什么)
-- 如果不确定,询问而不是猜测
+Always return structured responses that CopilotKit can render:
 
-# 错误处理 (Error Handling)
+For suggestions:
+```json
+{
+  "type": "suggestion",
+  "entry": {
+    "lines": [...],
+    "useCaseId": "...",
+    "confidence": 0.95
+  },
+  "explanation": "..."
+}
+```
 
-- 如果找不到匹配的科目 → 要求用户检查科目名称/编码
-- 如果没有匹配的业务场景 → 要求用户换种方式描述交易
-- 如果验证失败 → 解释错误并说明如何修正
-- 永远不要编造科目编码或金额
+For questions:
+```json
+{
+  "type": "question",
+  "question": "...",
+  "options": [...]
+}
+```
 
-# 重要提醒 (Important Reminders)
+# 重要提醒 (Important)
 
-- 增值税科目(222101 应交增值税)必须使用多栏账,不使用辅助核算
-- 始终检查科目是否需要辅助核算维度(客户、供应商等)
-- 小企业会计准则不允许计提减值(长期股权投资除外)
-- 收入确认需要履行履约义务
-`
+- VAT account (222101) MUST use multi-column ledger, NOT auxiliary accounting
+- Always check if account requires auxiliary dimensions
+- Explain accounting logic in simple terms for non-expert users
+- If uncertain, ask rather than guess
+"""
 ```
 
 ---
 
-## 7. Security & Authentication
+## 7. Frontend Implementation (CopilotKit)
 
-### 7.1 Authentication Flow
+### 7.1 CopilotKit Setup
 
-```typescript
-// All API routes and server actions must verify authentication
+```tsx
+// src/components/accounting/copilot-wrapper.tsx
 
-import { auth } from "@/lib/auth"
+"use client"
 
-export async function protectedAction() {
-  const session = await auth.api.getSession()
+import { CopilotKit } from "@copilotkit/react-core"
+import { CopilotSidebar } from "@copilotkit/react-ui"
+import "@copilotkit/react-ui/styles.css"
 
-  if (!session?.user) {
-    throw new Error("Unauthorized")
-  }
+export function AccountingCopilotWrapper({
+  children,
+  familyId,
+}: {
+  children: React.ReactNode
+  familyId: string
+}) {
+  return (
+    <CopilotKit
+      runtimeUrl="/api/copilotkit"
+      headers={{
+        "x-family-id": familyId,
+      }}
+    >
+      <CopilotSidebar
+        labels={{
+          title: "AI Accounting Assistant",
+          initial: "How can I help with your journal entries today?",
+        }}
+        defaultOpen={true}
+      >
+        {children}
+      </CopilotSidebar>
+    </CopilotKit>
+  )
+}
+```
 
-  // Verify family access
-  const membership = await db.familyMember.findFirst({
-    where: {
-      userId: session.user.id,
-      familyId: requestedFamilyId,
+### 7.2 Journal Entry Creation Page
+
+```tsx
+// src/app/dashboard/accounting/journal-entries/create/page.tsx
+
+import { AccountingCopilotWrapper } from "@/components/accounting/copilot-wrapper"
+import { JournalEntryForm } from "@/components/accounting/journal-entry-form"
+import { useCopilotReadable, useCopilotAction } from "@copilotkit/react-core"
+
+export default function CreateJournalEntryPage() {
+  const [entryDraft, setEntryDraft] = useState(null)
+  const [selectedCustomer, setSelectedCustomer] = useState(null)
+
+  // Make current state readable by AI
+  useCopilotReadable({
+    description: "Current journal entry draft",
+    value: entryDraft,
+  })
+
+  // Define action for AI to update entry
+  useCopilotAction({
+    name: "updateEntryDraft",
+    description: "Update the journal entry draft with AI suggestions",
+    parameters: [
+      {
+        name: "entry",
+        type: "object",
+        description: "The suggested journal entry",
+      },
+    ],
+    handler: async ({ entry }) => {
+      setEntryDraft(entry)
+      return "Entry draft updated"
     },
   })
 
-  if (!membership) {
-    throw new Error("Access denied")
-  }
+  // Define action for collecting auxiliary info
+  useCopilotAction({
+    name: "requestCustomerSelection",
+    description: "Prompt user to select a customer",
+    parameters: [
+      {
+        name: "accountCode",
+        type: "string",
+        description: "The account code that requires customer",
+      },
+    ],
+    handler: async ({ accountCode }) => {
+      // Show customer selector dialog
+      setShowCustomerSelector(true)
+      return "Waiting for customer selection"
+    },
+  })
 
-  // Proceed with action
+  return (
+    <AccountingCopilotWrapper familyId="fam_123">
+      <div className="flex flex-col gap-6 p-6">
+        <h1>Create Journal Entry</h1>
+
+        {entryDraft ? (
+          <EntryPreviewTable entry={entryDraft} />
+        ) : (
+          <JournalEntryForm onSubmit={handleManualSubmit} />
+        )}
+
+        <AuxiliarySelectorDialog
+          open={showCustomerSelector}
+          onSelect={setSelectedCustomer}
+        />
+      </div>
+    </AccountingCopilotWrapper>
+  )
 }
 ```
 
-### 7.2 API Key Management
+### 7.3 Custom CopilotKit Styling
+
+```css
+/* src/app/globals.css */
+
+/* Override CopilotKit default styles to match Loyalis design */
+.copilotKitSidebar {
+  border-left: 1px solid var(--border);
+  background: var(--card);
+}
+
+.copilotKitMessage {
+  border-radius: calc(var(--radius) - 2px); /* 8px */
+  padding: 0.75rem 1rem;
+}
+
+.copilotKitMessage[data-role="assistant"] {
+  background: var(--muted);
+  border: 1px solid var(--border);
+}
+
+.copilotKitMessage[data-role="user"] {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.copilotKitInput {
+  border: 1px solid var(--input);
+  border-radius: calc(var(--radius) - 2px);
+  background: var(--background);
+}
+
+.copilotKitInput:focus {
+  outline: none;
+  border-color: var(--ring);
+  box-shadow: 0 0 0 3px rgb(var(--ring) / 0.5);
+}
+```
+
+---
+
+## 8. Security & Authentication
+
+### 8.1 Authentication Flow
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  1. User logs in via Better-auth (Next.js)                  │
+│     - OAuth (Google, GitHub) or email/password              │
+│     - Session stored in HTTP-only cookie                    │
+└────────────────────────┬────────────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────────────┐
+│  2. User accesses Journal Entry creation page               │
+│     - Next.js validates session                             │
+│     - Retrieves familyId from user context                  │
+└────────────────────────┬────────────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────────────┐
+│  3. CopilotKit sends chat request to /api/copilotkit        │
+│     - Next.js API route validates Better-auth session       │
+│     - Creates JWT token with userId + familyId              │
+│     - Signs with shared secret                              │
+└────────────────────────┬────────────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────────────┐
+│  4. Next.js proxies request to Python backend               │
+│     - Adds Authorization: Bearer <JWT> header               │
+│     - Adds X-Family-Id header                               │
+└────────────────────────┬────────────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────────────┐
+│  5. Python backend validates JWT                            │
+│     - Verifies signature with shared secret                 │
+│     - Extracts userId and familyId                          │
+│     - Checks token expiration                               │
+└────────────────────────┬────────────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────────────┐
+│  6. Agent processes request with family isolation           │
+│     - All database queries scoped to familyId               │
+│     - Returns response to Next.js                           │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 8.2 JWT Validation (Python)
+
+```python
+# agent-backend/app/auth/jwt_validator.py
+
+import jwt
+from fastapi import HTTPException
+from datetime import datetime
+import os
+
+JWT_SECRET = os.getenv("JWT_SECRET")
+JWT_ALGORITHM = "HS256"
+
+def verify_token(token: str) -> dict:
+    """
+    Verify JWT token from Next.js frontend.
+
+    Args:
+        token: JWT token string
+
+    Returns:
+        Decoded payload containing userId and familyId
+
+    Raises:
+        HTTPException: If token is invalid or expired
+    """
+    try:
+        payload = jwt.decode(
+            token,
+            JWT_SECRET,
+            algorithms=[JWT_ALGORITHM]
+        )
+
+        # Check expiration
+        exp = payload.get("exp")
+        if exp and datetime.fromtimestamp(exp) < datetime.now():
+            raise HTTPException(status_code=401, detail="Token expired")
+
+        # Validate required fields
+        if "userId" not in payload or "familyId" not in payload:
+            raise HTTPException(status_code=401, detail="Invalid token payload")
+
+        return payload
+
+    except jwt.InvalidTokenError as e:
+        raise HTTPException(status_code=401, detail=f"Invalid token: {str(e)}")
+```
+
+### 8.3 Environment Variables
 
 ```bash
-# .env.local (never commit!)
+# .env.local (Next.js)
+NEXT_PUBLIC_COPILOTKIT_KEY=your_copilotkit_key
+AGENT_BACKEND_URL=https://agent-backend.example.com
+JWT_SECRET=your_shared_secret_key
 
-# LLM Providers
-OPENAI_API_KEY=sk-...
-ANTHROPIC_API_KEY=sk-ant-...
-
-# Database
+# .env (Python backend)
+JWT_SECRET=your_shared_secret_key  # MUST match Next.js
 DATABASE_URL=postgresql://...
-
-# Auth
-BETTER_AUTH_SECRET=...
-BETTER_AUTH_URL=http://localhost:3000
-```
-
-### 7.3 Rate Limiting
-
-```typescript
-// src/lib/rate-limit.ts
-
-import { Ratelimit } from "@upstash/ratelimit"
-import { Redis } from "@upstash/redis"
-
-const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL!,
-  token: process.env.UPSTASH_REDIS_REST_TOKEN!,
-})
-
-const ratelimit = new Ratelimit({
-  redis,
-  limiter: Ratelimit.slidingWindow(100, "1 h"), // 100 requests per hour
-})
-
-export async function rateLimit(identifier: string, limit: number = 100) {
-  const { success, remaining } = await ratelimit.limit(identifier)
-  return { success, remaining }
-}
+AZURE_OPENAI_API_KEY=...
+AZURE_OPENAI_ENDPOINT=https://...
 ```
 
 ---
 
-## 8. Performance & Scalability
+## 9. Performance & Scalability
 
-### 8.1 Caching Strategy
+### 9.1 Caching Strategy
 
-```typescript
-// Cache CoA lookups in memory (CoA rarely changes)
+```python
+# agent-backend/app/database/repositories.py
 
-import NodeCache from "node-cache"
+from functools import lru_cache
+from typing import List
+import redis
 
-const coaCache = new NodeCache({ stdTTL: 3600 }) // 1 hour
+# Redis client for distributed cache
+redis_client = redis.from_url(os.getenv("REDIS_URL"))
 
-export async function lookupAccountCached(familyId: string, query: string) {
-  const cacheKey = `${familyId}:${query}`
+class ChartOfAccountRepository:
+    @lru_cache(maxsize=1000)  # In-memory cache
+    async def find_by_code(self, family_id: str, code: str):
+        """Cache account lookups (rarely change)."""
+        cache_key = f"coa:{family_id}:{code}"
 
-  const cached = coaCache.get(cacheKey)
-  if (cached) return cached
+        # Check Redis
+        cached = redis_client.get(cache_key)
+        if cached:
+            return json.loads(cached)
 
-  const result = await lookupAccount(familyId, query)
-  coaCache.set(cacheKey, result)
+        # Query database
+        account = await self.db.chartofaccount.find_first(
+            where={"familyId": family_id, "accountCode": code}
+        )
 
-  return result
-}
+        # Cache for 1 hour
+        if account:
+            redis_client.setex(cache_key, 3600, json.dumps(account))
+
+        return account
 ```
 
-### 8.2 Database Optimization
+### 9.2 Rate Limiting
 
-```prisma
-// Essential indexes for performance
+```python
+# agent-backend/app/routers/agent.py
 
-@@index([familyId, accountCode])      // Fast CoA lookups
-@@index([familyId, accountName])      // Fast name searches
-@@index([familyId, entryDate])        // Fast date range queries
-@@index([journalEntryId])             // Fast line lookups
-```
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
-### 8.3 LLM Cost Optimization
+limiter = Limiter(key_func=get_remote_address)
 
-```typescript
-// Use cheaper models for simple tasks
-
-function selectModel(taskComplexity: "simple" | "complex") {
-  if (taskComplexity === "simple") {
-    return "gpt-3.5-turbo" // Cheap for lookups
-  } else {
-    return "gpt-4-turbo" // Powerful for reasoning
-  }
-}
-
-// Implement prompt caching (Claude)
-const systemPrompt = {
-  type: "text",
-  text: SYSTEM_PROMPT,
-  cache_control: { type: "ephemeral" }, // Cache system prompt
-}
+@router.post("/chat")
+@limiter.limit("100/hour")  # 100 requests per hour per IP
+async def chat_with_agent(...):
+    # ...
 ```
 
 ---
 
-## 9. Testing Strategy
+## 10. Testing Strategy
 
-### 9.1 Unit Tests
+### 10.1 Python Backend Tests
 
-```typescript
-// src/lib/ai/tools/__tests__/lookup-account.test.ts
+```python
+# agent-backend/tests/test_agents.py
 
-import { describe, it, expect, beforeAll } from "bun:test"
-import { lookupAccount } from "@/actions/chart-of-account-actions"
+import pytest
+from app.agents.journal_entry_agent import JournalEntryAgent
 
-describe("lookupAccount", () => {
-  it("should find account by exact code", async () => {
-    const result = await lookupAccount("family123", "1002")
-    expect(result.matches).toHaveLength(1)
-    expect(result.matches[0].accountName).toBe("银行存款")
-  })
+@pytest.mark.asyncio
+async def test_agent_ar_receipt():
+    """Test agent handles AR receipt scenario correctly."""
+    agent = JournalEntryAgent(family_id="test_family", user_id="test_user")
 
-  it("should find account by name", async () => {
-    const result = await lookupAccount("family123", "银行存款")
-    expect(result.matches).toHaveLength(1)
-    expect(result.matches[0].accountCode).toBe("1002")
-  })
+    response = await agent.process_message(
+        message="收到客户张三的货款 10000元 通过银行转账",
+        thread_id=None,
+        context={}
+    )
 
-  it("should return fuzzy matches", async () => {
-    const result = await lookupAccount("family123", "银行")
-    expect(result.matches.length).toBeGreaterThan(0)
-  })
-})
+    assert "应收账款" in response["message"]
+    assert response["data"] is not None
+    assert len(response["data"]["lines"]) == 2
+    assert response["data"]["lines"][0]["accountCode"] == "1002"
+    assert response["data"]["lines"][1]["accountCode"] == "1122"
 ```
 
-### 9.2 Integration Tests
+### 10.2 Integration Tests (Next.js + Python)
 
 ```typescript
-// src/app/api/agent/__tests__/journal-entry.test.ts
-
-import { describe, it, expect } from "bun:test"
-
-describe("Journal Entry Agent API", () => {
-  it("should handle AR receipt scenario", async () => {
-    const response = await fetch("/api/agent/journal-entry", {
-      method: "POST",
-      body: JSON.stringify({
-        familyId: "family123",
-        userInput: "Debit: Bank 10000, customer paid invoice",
-      }),
-    })
-
-    const data = await response.json()
-    expect(data.data.suggestedEntry).toBeDefined()
-    expect(data.data.suggestedEntry.lines).toHaveLength(2)
-  })
-})
-```
-
-### 9.3 E2E Tests (Playwright)
-
-```typescript
-// e2e/journal-entry-creation.spec.ts
+// tests/integration/agent-flow.test.ts
 
 import { test, expect } from "@playwright/test"
 
-test("create journal entry with AI assistance", async ({ page }) => {
+test("create journal entry with CopilotKit", async ({ page }) => {
   await page.goto("/dashboard/accounting/journal-entries/create")
 
-  // Switch to AI mode
-  await page.click("text=AI-Assisted Entry")
+  // Wait for CopilotKit to load
+  await expect(page.locator(".copilotKitSidebar")).toBeVisible()
 
-  // Enter partial entry
-  await page.fill("[placeholder='Search transactions...']", "银行")
-  await page.click("text=1002 银行存款")
-  await page.fill("[name='amount']", "10000")
-  await page.fill(
-    "[placeholder='What happened?']",
-    "客户支付上月发票货款"
-  )
+  // Type message in CopilotKit
+  await page.fill(".copilotKitInput", "收到客户张三的货款10000元")
+  await page.click("button[type='submit']")
 
-  // Submit to agent
-  await page.click("text=Generate Entry with AI")
+  // Wait for AI response
+  await expect(page.locator("text=应收账款收款")).toBeVisible({ timeout: 10000 })
 
-  // Wait for suggestion
-  await expect(page.locator("text=建议的会计分录")).toBeVisible()
-
-  // Verify suggested entry
-  await expect(page.locator("text=借: 1002 银行存款")).toBeVisible()
-  await expect(page.locator("text=贷: 1122 应收账款")).toBeVisible()
+  // Verify entry preview
+  await expect(page.locator("text=1002 银行存款")).toBeVisible()
+  await expect(page.locator("text=1122 应收账款")).toBeVisible()
 })
 ```
 
 ---
 
-## 10. Deployment & DevOps
+## 11. Deployment & DevOps
 
-### 10.1 Environment Setup
+### 11.1 Docker Configuration (Python Backend)
 
-```bash
-# Local development
-bun install
-bunx prisma generate --output ../src/generated/prisma
-bunx prisma migrate dev
-bun dev
+```dockerfile
+# docker/agent-backend/Dockerfile
 
-# Production build
-bun run build
+FROM python:3.11-slim
 
-# Docker (optional - using system proxy per constraints)
-# Dockerfile
-FROM oven/bun:1 AS base
 WORKDIR /app
 
-# Use system proxy
+# Use system proxy (per constraints)
 ENV HTTP_PROXY=http://proxy.example.com:8080
 ENV HTTPS_PROXY=http://proxy.example.com:8080
 
-COPY package.json bun.lockb ./
-RUN bun install --frozen-lockfile
+# Install UV (Python package manager - per constraints)
+RUN pip install uv
 
-COPY . .
-RUN bunx prisma generate --output ./src/generated/prisma
-RUN bun run build
+# Copy dependencies
+COPY pyproject.toml requirements.txt ./
+RUN uv pip install -r requirements.txt
 
-EXPOSE 3000
-CMD ["bun", "start"]
+# Copy application code
+COPY app/ ./app/
+COPY main.py ./
+
+# Expose port
+EXPOSE 8000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=40s \
+  CMD curl -f http://localhost:8000/api/health || exit 1
+
+# Run application
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
 ```
 
-### 10.2 Vercel Deployment
+### 11.2 Deployment Architecture
 
-```json
-// vercel.json
-{
-  "buildCommand": "bun run build",
-  "devCommand": "bun dev",
-  "installCommand": "bun install",
-  "framework": "nextjs",
-  "env": {
-    "DATABASE_URL": "@database-url",
-    "OPENAI_API_KEY": "@openai-api-key",
-    "ANTHROPIC_API_KEY": "@anthropic-api-key"
-  },
-  "regions": ["hkg1"] // Hong Kong for China proximity
-}
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        Vercel                                │
+│  Next.js Frontend + CopilotKit UI                           │
+│  - Auto-scaling                                              │
+│  - Edge functions                                            │
+│  - /api/copilotkit route                                     │
+└──────────────────────────┬──────────────────────────────────┘
+                           │ HTTPS
+                           ▼
+┌─────────────────────────────────────────────────────────────┐
+│          Azure Container Apps / Cloud Run                    │
+│  Python Backend (FastAPI + Microsoft Agent Framework)       │
+│  - Auto-scaling (min: 1, max: 10)                           │
+│  - CPU: 1 vCPU, Memory: 2GB                                 │
+│  - Health checks enabled                                     │
+└──────────────────────────┬──────────────────────────────────┘
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    Neon PostgreSQL                           │
+│  - Serverless                                                │
+│  - Auto-scaling storage                                      │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-### 10.3 CI/CD Pipeline
+### 11.3 CI/CD Pipeline
 
 ```yaml
-# .github/workflows/ci.yml
-name: CI
+# .github/workflows/deploy-backend.yml
+
+name: Deploy Python Backend
 
 on:
   push:
-    branches: [main, develop]
-  pull_request:
     branches: [main]
+    paths:
+      - 'agent-backend/**'
 
 jobs:
-  test:
+  deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v1
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install UV
+        run: pip install uv
 
       - name: Install dependencies
-        run: bun install
-
-      - name: Generate Prisma Client
-        run: bunx prisma generate --output ./src/generated/prisma
+        run: |
+          cd agent-backend
+          uv pip install -r requirements.txt
 
       - name: Run tests
-        run: bun test
+        run: |
+          cd agent-backend
+          pytest tests/
 
-      - name: Build
-        run: bun run build
+      - name: Build Docker image
+        run: |
+          docker build -f docker/agent-backend/Dockerfile -t agent-backend .
+
+      - name: Deploy to Azure Container Apps
+        uses: azure/container-apps-deploy-action@v1
+        with:
+          resourceGroup: loyalis-rg
+          containerAppName: journal-agent-backend
+          imageToDeploy: agent-backend:latest
 ```
 
 ---
 
-## 11. Monitoring & Observability
+## 12. Monitoring & Observability
 
-### 11.1 Logging
+### 12.1 Application Insights (Python)
 
-```typescript
-// src/lib/logger.ts
+```python
+# agent-backend/main.py
 
-import pino from "pino"
+from azure.monitor.opentelemetry import configure_azure_monitor
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 
-export const logger = pino({
-  level: process.env.LOG_LEVEL || "info",
-  transport:
-    process.env.NODE_ENV === "development"
-      ? { target: "pino-pretty" }
-      : undefined,
-})
-
-// Usage in agent
-logger.info(
-  {
-    conversationId,
-    userId: session.user.id,
-    familyId,
-    toolsCalled: ["lookup_account", "get_use_case_candidates"],
-    tokensUsed: 1234,
-  },
-  "Agent conversation completed"
+# Configure Azure Application Insights
+configure_azure_monitor(
+    connection_string=os.getenv("APPLICATIONINSIGHTS_CONNECTION_STRING")
 )
+
+app = FastAPI()
+
+# Auto-instrument FastAPI
+FastAPIInstrumentor.instrument_app(app)
 ```
 
-### 11.2 Metrics
+### 12.2 Logging
 
-```typescript
-// src/lib/metrics.ts
+```python
+# agent-backend/app/agents/journal_entry_agent.py
 
-import { Counter, Histogram } from "prom-client"
+import logging
+import structlog
 
-export const agentCallsCounter = new Counter({
-  name: "agent_calls_total",
-  help: "Total number of agent API calls",
-  labelNames: ["familyId", "status"],
-})
+logger = structlog.get_logger(__name__)
 
-export const agentLatencyHistogram = new Histogram({
-  name: "agent_latency_seconds",
-  help: "Agent response latency in seconds",
-  buckets: [0.5, 1, 2, 5, 10],
-})
+class JournalEntryAgent:
+    async def process_message(self, message: str, ...):
+        logger.info(
+            "agent_message_received",
+            family_id=self.family_id,
+            user_id=self.user_id,
+            message_length=len(message)
+        )
 
-// Usage
-agentCallsCounter.inc({ familyId, status: "success" })
-agentLatencyHistogram.observe(duration)
-```
+        # Process...
 
-### 11.3 Error Tracking
-
-```typescript
-// Sentry integration (optional)
-
-import * as Sentry from "@sentry/nextjs"
-
-Sentry.init({
-  dsn: process.env.SENTRY_DSN,
-  environment: process.env.NODE_ENV,
-  tracesSampleRate: 0.1,
-})
-
-// Capture agent errors
-try {
-  await agent.processMessage(params)
-} catch (error) {
-  Sentry.captureException(error, {
-    tags: {
-      familyId,
-      conversationId,
-    },
-  })
-  throw error
-}
+        logger.info(
+            "agent_message_processed",
+            thread_id=thread_id,
+            tools_called=len(result.steps),
+            tokens_used=result.usage.total_tokens
+        )
 ```
 
 ---
 
-## 12. Technical Risks & Mitigation
+## 13. Technical Risks & Mitigation
 
-### 12.1 Risk Matrix
+### 13.1 Risk Matrix
 
 | Risk | Probability | Impact | Mitigation |
 |------|------------|--------|------------|
-| **LLM hallucination** | Medium | High | Structured tool calls, validation layer, human review |
-| **API rate limits** | Low | Medium | Rate limiting, caching, fallback models |
-| **Database performance** | Low | Medium | Proper indexing, query optimization, connection pooling |
-| **Security vulnerabilities** | Low | High | Regular audits, dependency updates, input validation |
-| **Cost overruns (LLM)** | Medium | Medium | Usage monitoring, model selection, prompt optimization |
-| **Data inconsistency** | Low | High | Database constraints, transaction management, validation |
+| **CopilotKit breaking changes** | Low | High | Pin version, test before upgrades |
+| **Python-Next.js latency** | Medium | Medium | Deploy close regions, use caching |
+| **Microsoft Agent Framework limitations** | Medium | High | Evaluate early, maintain escape hatch |
+| **Cross-service authentication issues** | Low | High | Comprehensive E2E tests, shared JWT secret rotation |
+| **Azure OpenAI rate limits** | Low | Medium | Implement exponential backoff, fallback to OpenAI |
 
-### 12.2 Mitigation Strategies
+### 13.2 Migration Path from Microsoft Agent Framework
 
-**LLM Hallucination:**
-```typescript
-// Always validate LLM outputs with structured tools
-const suggestion = await agent.getSuggestion(input)
+If Microsoft Agent Framework proves insufficient, maintain abstraction:
 
-// Never trust LLM blindly - validate with actual data
-const validationResult = await validateAndFinalizeEntry(suggestion)
+```python
+# agent-backend/app/agents/base_agent.py
 
-if (!validationResult.isValid) {
-  // Reject and ask agent to retry
-  logger.warn("LLM generated invalid entry", validationResult.errors)
-}
-```
+from abc import ABC, abstractmethod
 
-**Cost Control:**
-```typescript
-// Track token usage per family
-const usage = await db.llmUsage.aggregate({
-  where: {
-    familyId,
-    createdAt: { gte: startOfMonth },
-  },
-  _sum: { tokens: true },
-})
+class BaseAgent(ABC):
+    """Abstract agent interface for easy framework switching."""
 
-if (usage._sum.tokens > MONTHLY_LIMIT) {
-  throw new Error("Monthly LLM usage limit exceeded")
-}
-```
+    @abstractmethod
+    async def process_message(self, message: str, ...):
+        pass
 
-**Data Consistency:**
-```typescript
-// Use database transactions for entry creation
-await db.$transaction(async (tx) => {
-  const entry = await tx.journalEntry.create({ data: entryData })
-  await tx.journalEntryLine.createMany({ data: lines })
+# Current implementation
+class MSAgentFrameworkAgent(BaseAgent):
+    # Uses Microsoft Agent Framework
+    pass
 
-  // Verify balance
-  const balance = await verifyBalance(entry.id)
-  if (!balance) throw new Error("Debit-credit imbalance")
-})
+# Fallback implementation
+class LangChainAgent(BaseAgent):
+    # Uses LangChain if needed
+    pass
 ```
 
 ---
 
-## Appendix A: File Structure Checklist
+## Appendix A: Technology Comparison
+
+### Why CopilotKit + Microsoft Agent Framework?
+
+| Aspect | Custom LangChain | CopilotKit + MS Agent |
+|--------|-----------------|----------------------|
+| **Frontend UI** | Build from scratch | Pre-built, production-ready |
+| **Conversation Management** | Manual state handling | Automatic thread management |
+| **Tool Calling** | Manual parsing | Native function calling |
+| **Streaming** | Complex implementation | Built-in support |
+| **Chinese Support** | Requires custom prompts | Better with Azure OpenAI CN |
+| **Maintenance** | High (custom code) | Low (managed service) |
+| **Time to Market** | 4-6 weeks | 2-3 weeks |
+
+---
+
+## Appendix B: File Structure Checklist
 
 ```
-✅ Database
-- [ ] prisma/schema.prisma (add accounting models)
-- [ ] prisma/migrations/
-- [ ] prisma/seed/chart-of-accounts.ts
-- [ ] prisma/seed/use-case-templates.ts
-
-✅ Backend
-- [ ] src/actions/journal-entry-actions.ts
-- [ ] src/actions/chart-of-account-actions.ts
-- [ ] src/actions/use-case-template-actions.ts
-- [ ] src/app/api/agent/journal-entry/route.ts
-
-✅ AI Agent
-- [ ] src/lib/ai/journal-entry-agent.ts
-- [ ] src/lib/ai/prompts/system-prompt.ts
-- [ ] src/lib/ai/tools/lookup-account.ts
-- [ ] src/lib/ai/tools/get-use-case-candidates.ts
-- [ ] src/lib/ai/tools/get-journal-template.ts
-- [ ] src/lib/ai/tools/validate-entry.ts
-
-✅ Frontend
-- [ ] src/app/dashboard/accounting/journal-entries/page.tsx
+✅ Next.js Frontend
+- [ ] src/app/api/copilotkit/route.ts
+- [ ] src/components/accounting/copilot-wrapper.tsx
 - [ ] src/app/dashboard/accounting/journal-entries/create/page.tsx
-- [ ] src/components/accounting/journal-entry-form.tsx
-- [ ] src/components/accounting/ai-assistant-chat.tsx
-- [ ] src/components/accounting/entry-preview.tsx
-- [ ] src/components/accounting/auxiliary-selector.tsx
-- [ ] src/components/accounting/account-search.tsx
 
-✅ Types
-- [ ] src/types/journal-entry.ts
-- [ ] src/types/chart-of-account.ts
-- [ ] src/types/use-case-template.ts
-
-✅ Testing
-- [ ] src/lib/ai/tools/__tests__/
-- [ ] src/app/api/agent/__tests__/
-- [ ] e2e/journal-entry-creation.spec.ts
+✅ Python Backend
+- [ ] agent-backend/pyproject.toml (UV config)
+- [ ] agent-backend/main.py
+- [ ] agent-backend/app/agents/journal_entry_agent.py
+- [ ] agent-backend/app/tools/*.py (4 tools)
+- [ ] agent-backend/app/routers/agent.py
+- [ ] agent-backend/app/auth/jwt_validator.py
 
 ✅ Configuration
-- [ ] .env.local (API keys)
-- [ ] vercel.json (deployment config)
-- [ ] .github/workflows/ci.yml (CI/CD)
-```
+- [ ] .env.local (Next.js JWT secret, backend URL)
+- [ ] agent-backend/.env (JWT secret, Azure OpenAI)
+- [ ] docker/agent-backend/Dockerfile
 
----
-
-## Appendix B: API Reference
-
-### Server Actions
-
-```typescript
-// Chart of Accounts
-lookupAccount(familyId: string, query: string)
-getChartOfAccounts(familyId: string)
-
-// Journal Entries
-createJournalEntry(data: CreateJournalEntryInput)
-postJournalEntry(entryId: string)
-voidJournalEntry(entryId: string)
-getJournalEntries(familyId: string, filters: Filters)
-
-// Auxiliary Entities
-getCustomers(familyId: string)
-getSuppliers(familyId: string)
-getDepartments(familyId: string)
-getProjects(familyId: string)
-getInventoryItems(familyId: string)
-```
-
-### API Routes
-
-```typescript
-POST /api/agent/journal-entry
-GET  /api/journal-entries
-POST /api/journal-entries
-PUT  /api/journal-entries/:id
-DELETE /api/journal-entries/:id
+✅ CI/CD
+- [ ] .github/workflows/deploy-backend.yml
+- [ ] .github/workflows/test-integration.yml
 ```
 
 ---
@@ -1714,7 +1421,8 @@ DELETE /api/journal-entries/:id
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
-| 1.0 | 2026-01-11 | Claude Code | Initial TRD created from PRD |
+| 1.0 | 2026-01-11 | Claude Code | Initial TRD |
+| **2.0** | **2026-01-11** | **Claude Code** | **Migrated to CopilotKit + Microsoft Agent Framework** |
 
 ---
 

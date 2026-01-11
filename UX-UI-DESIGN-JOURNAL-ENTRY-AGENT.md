@@ -1,10 +1,12 @@
 # UX/UI Design Document: Journal Entry Agent
 
-**Document Version:** 1.0
+**Document Version:** 2.0
 **Last Updated:** 2026-01-11
 **Product:** Loyalis - AI-Powered Financial Management Platform
 **Feature:** Journal Entry Agent for Automated Accounting
 **Related Documents:** PRD-JOURNAL-ENTRY-AGENT.md, TRD-JOURNAL-ENTRY-AGENT.md, STYLING-GUIDE.md
+
+**🔄 v2.0 Update:** Updated to use **CopilotKit** for frontend chat UI with **Microsoft Agent Framework** backend
 
 ---
 
@@ -13,15 +15,16 @@
 1. [Executive Summary](#1-executive-summary)
 2. [Design Principles](#2-design-principles)
 3. [Visual Design System](#3-visual-design-system)
-4. [Information Architecture](#4-information-architecture)
-5. [User Personas & Scenarios](#5-user-personas--scenarios)
-6. [User Flows](#6-user-flows)
-7. [Wireframes & Components](#7-wireframes--components)
-8. [Interactive Prototypes](#8-interactive-prototypes)
-9. [Responsive Design](#9-responsive-design)
-10. [Accessibility](#10-accessibility)
-11. [Error States & Edge Cases](#11-error-states--edge-cases)
-12. [Animation & Micro-interactions](#12-animation--micro-interactions)
+4. [CopilotKit Integration](#4-copilotkit-integration) **NEW**
+5. [Information Architecture](#5-information-architecture)
+6. [User Personas & Scenarios](#6-user-personas--scenarios)
+7. [User Flows](#7-user-flows)
+8. [Wireframes & Components](#8-wireframes--components)
+9. [Interactive Prototypes](#9-interactive-prototypes)
+10. [Responsive Design](#10-responsive-design)
+11. [Accessibility](#11-accessibility)
+12. [Error States & Edge Cases](#12-error-states--edge-cases)
+13. [Animation & Micro-interactions](#13-animation--micro-interactions)
 
 ---
 
@@ -1461,11 +1464,351 @@ src/components/accounting/
 
 ---
 
+---
+
+## 4. CopilotKit Integration
+
+### 4.1 Why CopilotKit?
+
+**CopilotKit** provides a production-ready copilot UI framework that eliminates the need for custom chat interface development:
+
+**Benefits:**
+- ✅ Pre-built `<CopilotSidebar>` component with conversation threading
+- ✅ Automatic message streaming and state management
+- ✅ Built-in error handling and retry logic
+- ✅ TypeScript-first API with React hooks
+- ✅ Customizable styling to match Loyalis design system
+- ✅ Seamless integration with Microsoft Agent Framework backend
+
+### 4.2 CopilotKit Architecture
+
+```tsx
+<CopilotKit runtimeUrl="/api/copilotkit">
+  {/* Provide context to AI */}
+  <useCopilotReadable>
+    Current entry draft, family data
+  </useCopilotReadable>
+
+  {/* Define actions AI can trigger */}
+  <useCopilotAction>
+    Update entry, request customer selection, etc.
+  </useCopilotAction>
+
+  {/* UI Components */}
+  <CopilotSidebar>
+    <JournalEntryCreationUI />
+  </CopilotSidebar>
+</CopilotKit>
+```
+
+### 4.3 CopilotSidebar UI Behavior
+
+**Default Layout:**
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Main Content (70%)           │  CopilotSidebar (30%)       │
+│                               │                             │
+│  ┌─────────────────────────┐  │  ┌───────────────────────┐ │
+│  │ Entry Form / Preview    │  │  │ 🤖 AI Assistant       │ │
+│  │                         │  │  │                       │ │
+│  │ - Account search        │  │  │ [Conversation]        │ │
+│  │ - Amount input          │  │  │  User: 收到客户...    │ │
+│  │ - Description           │  │  │  AI: 这是应收账款...  │ │
+│  │                         │  │  │                       │ │
+│  │ [Entry Preview Table]   │  │  │  [Suggested Entry]    │ │
+│  │                         │  │  │                       │ │
+│  └─────────────────────────┘  │  │ [Input Box]           │ │
+│                               │  └───────────────────────┘ │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Mobile Behavior:**
+- Sidebar becomes bottom drawer
+- Swipe up to expand full-screen chat
+- Swipe down to minimize
+
+### 4.4 Custom CopilotKit Styling
+
+To match Loyalis design system, we override CopilotKit's default styles:
+
+```css
+/* src/app/globals.css */
+
+/* Sidebar Container */
+.copilotKitSidebar {
+  border-left: 1px solid var(--border);
+  background: var(--card);
+  font-family: inherit; /* Use Loyalis fonts */
+}
+
+/* Message Bubbles */
+.copilotKitMessage {
+  border-radius: calc(var(--radius) - 2px); /* 8px */
+  padding: 0.75rem 1rem;
+  max-width: 85%; /* Prevent ultra-wide bubbles */
+}
+
+.copilotKitMessage[data-role="assistant"] {
+  background: var(--muted);
+  border: 1px solid var(--border);
+  color: var(--foreground);
+}
+
+.copilotKitMessage[data-role="user"] {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  margin-left: auto; /* Align right */
+}
+
+/* AI Thinking Indicator */
+.copilotKitThinking {
+  color: var(--muted-foreground);
+  font-style: italic;
+}
+
+.copilotKitThinking::before {
+  content: "🤖 ";
+}
+
+/* Input Box */
+.copilotKitInput {
+  border: 1px solid var(--input);
+  border-radius: calc(var(--radius) - 2px);
+  background: var(--background);
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+}
+
+.copilotKitInput:focus {
+  outline: none;
+  border-color: var(--ring);
+  box-shadow: 0 0 0 3px rgb(var(--ring) / 0.5);
+}
+
+/* Suggestions / Quick Replies */
+.copilotKitSuggestion {
+  background: var(--secondary);
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) - 4px); /* 6px */
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  transition: all 150ms ease-out;
+}
+
+.copilotKitSuggestion:hover {
+  background: var(--secondary)/80;
+  transform: translateY(-1px);
+}
+
+/* Structured Data Cards (e.g., Entry Preview) */
+.copilotKitDataCard {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) + 4px); /* 14px */
+  padding: 1rem;
+  margin: 0.5rem 0;
+}
+```
+
+### 4.5 CopilotKit Hooks Usage
+
+**1. Make Data Readable to AI:**
+```tsx
+import { useCopilotReadable } from "@copilotkit/react-core"
+
+function JournalEntryPage() {
+  const [entryDraft, setEntryDraft] = useState(null)
+  const chartOfAccounts = useChartOfAccounts()
+
+  // AI can read current entry draft
+  useCopilotReadable({
+    description: "Current journal entry draft being created",
+    value: entryDraft,
+  })
+
+  // AI can read available accounts
+  useCopilotReadable({
+    description: "Chart of Accounts for this family",
+    value: chartOfAccounts,
+  })
+}
+```
+
+**2. Define Actions AI Can Trigger:**
+```tsx
+import { useCopilotAction } from "@copilotkit/react-core"
+
+function JournalEntryPage() {
+  // Action: Update entry draft
+  useCopilotAction({
+    name: "updateEntryDraft",
+    description: "Update the journal entry with AI-generated suggestions",
+    parameters: [
+      {
+        name: "lines",
+        type: "array",
+        description: "Array of journal entry lines (debit/credit)",
+      },
+      {
+        name: "useCaseId",
+        type: "string",
+        description: "Business scenario template ID used",
+      },
+    ],
+    handler: async ({ lines, useCaseId }) => {
+      setEntryDraft({ lines, useCaseId })
+      toast.success("AI generated entry suggestion")
+      return "Entry draft updated successfully"
+    },
+  })
+
+  // Action: Request customer selection
+  useCopilotAction({
+    name: "requestCustomerSelection",
+    description: "Prompt user to select a customer for auxiliary accounting",
+    parameters: [
+      {
+        name: "accountCode",
+        type: "string",
+        description: "Account that requires customer selection",
+      },
+    ],
+    handler: async ({ accountCode }) => {
+      setShowCustomerDialog(true)
+      setRequiredAccountCode(accountCode)
+      return "Customer selection dialog opened"
+    },
+  })
+
+  // Action: Validate entry
+  useCopilotAction({
+    name: "validateEntry",
+    description: "Validate the complete journal entry for compliance",
+    parameters: [
+      {
+        name: "entry",
+        type: "object",
+        description: "Complete journal entry to validate",
+      },
+    ],
+    handler: async ({ entry }) => {
+      const validationResult = await validateJournalEntry(entry)
+      setValidationErrors(validationResult.errors)
+
+      if (validationResult.isValid) {
+        return "✅ Entry is valid and ready to post"
+      } else {
+        return `❌ Validation failed:\n${validationResult.errors.join("\n")}`
+      }
+    },
+  })
+}
+```
+
+**3. Custom Message Rendering:**
+```tsx
+import { CopilotSidebar } from "@copilotkit/react-ui"
+import { EntryPreviewCard } from "@/components/accounting/entry-preview-card"
+
+<CopilotSidebar
+  labels={{
+    title: "AI Accounting Assistant",
+    initial: "Describe your transaction, and I'll help create the journal entry!",
+    placeholder: "E.g., 收到客户张三的货款10000元...",
+  }}
+  defaultOpen={true}
+  onInProgress={(inProgress) => {
+    // Show loading state in main UI
+    setAiProcessing(inProgress)
+  }}
+  makeSystemMessage={(message) => {
+    // Custom rendering for structured data
+    if (message.data?.suggestedEntry) {
+      return <EntryPreviewCard entry={message.data.suggestedEntry} />
+    }
+    return message.content
+  }}
+>
+  {children}
+</CopilotSidebar>
+```
+
+### 4.6 User Interaction Patterns
+
+**Pattern 1: Conversational Entry Creation**
+```
+User: "收到客户张三的货款10000元"
+
+AI: "我理解了,这是一笔应收账款的收款。让我为你生成凭证:
+
+[Shows EntryPreviewCard with suggested entry]
+
+请从下拉菜单中选择客户 '张三'。"
+
+[CopilotKit triggers requestCustomerSelection action]
+[User selects customer from dialog]
+
+User: "已选择"
+
+AI: "好的!凭证已完成验证,可以过账了。"
+
+[Shows Post Entry button in main UI]
+```
+
+**Pattern 2: Multi-turn Clarification**
+```
+User: "购买商品11300元"
+
+AI: "请确认:这11300元是含税总价还是不含税价格?"
+
+[Shows quick reply buttons: "含税总价" | "不含税价格"]
+
+User: [Clicks "含税总价"]
+
+AI: "增值税率是多少? 商品通常是13%。"
+
+[Shows quick reply chips: "13%" | "9%" | "6%" | "其他"]
+
+User: [Clicks "13%"]
+
+AI: "好的,已生成凭证:
+- 借: 库存商品 10,000
+- 借: 应交增值税(进项税额) 1,300
+- 贷: 应付账款 11,300
+
+请选择供应商和存货项目。"
+```
+
+### 4.7 CopilotKit vs Custom Chat UI
+
+| Feature | Custom Build | CopilotKit |
+|---------|-------------|------------|
+| **Development Time** | 2-3 weeks | 2-3 days |
+| **Message Threading** | Manual implementation | Built-in |
+| **Streaming** | Complex WebSocket/SSE | Automatic |
+| **Error Handling** | Custom logic | Retry & fallback |
+| **Mobile Responsive** | Custom media queries | Adaptive by default |
+| **Accessibility** | Manual ARIA | Built-in WCAG |
+| **Conversation History** | Custom state management | Automatic persistence |
+| **Rich Content Rendering** | Custom components | `makeSystemMessage` hook |
+| **Maintenance** | Ongoing | Framework updates |
+
+**Decision: Use CopilotKit** to accelerate development and leverage production-tested UI patterns.
+
+---
+
+## 5. Information Architecture
+
+*[Previous Information Architecture section remains, numbering updated to section 5]*
+
+---
+
 ## Document Control
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
 | 1.0 | 2026-01-11 | Claude Code | Initial UX/UI design document |
+| **2.0** | **2026-01-11** | **Claude Code** | **Added CopilotKit integration design** |
 
 ---
 
