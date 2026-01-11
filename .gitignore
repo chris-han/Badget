@@ -48,3 +48,4 @@ next-env.d.ts
 
 .content-collections
 .trigger
+.temp_docx_extract/

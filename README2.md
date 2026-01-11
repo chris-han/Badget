@@ -149,6 +149,12 @@ PlaidIncome → Income tracking and budgeting insights
 - **Goal Alignment** - Ensure budgets support financial goals
 - **Optimization Alerts** - Suggest budget reallocation opportunities
 
+### Chart of Accounts (CoA) Setup
+- **Industry Standard Templates** - Pre-configured CoA templates for Manufacturing, Service, and Trading industries
+- **Flexible Import** - Support for CSV import of custom account structures
+- **Tax Compliance** - Built-in support for VAT categories and specialized tax reporting
+- **Auxiliary Accounting** - Multi-dimensional analysis support (Department, Customer, Project, etc.)
+
 ### Financial Health Score
 - **Holistic Assessment** - Debt-to-income, savings rate, spending efficiency
 - **Improvement Recommendations** - Specific actions to improve score

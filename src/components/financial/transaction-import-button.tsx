@@ -40,28 +40,40 @@ export function TransactionImportButton({
       // Import from both Plaid and GoCardless
       const plaidResponse = await importTransactions(startDate, endDate);
       const goCardlessResponse = await importGoCardlessTransactions(startDate, endDate);
-      
+
       let successCount = 0;
-      let totalMessage = "";
-      
+      let messages: string[] = [];
+
       if (plaidResponse.success) {
         successCount++;
-        totalMessage += plaidResponse.message;
+        messages.push(plaidResponse.message);
+      } else {
+        // Show Plaid-specific errors as warnings if GoCardless might succeed
+        console.warn("Plaid import:", plaidResponse.message);
       }
-      
+
       if (goCardlessResponse.success) {
         successCount++;
-        if (totalMessage) totalMessage += " | ";
-        totalMessage += goCardlessResponse.message;
+        messages.push(goCardlessResponse.message);
+      } else {
+        // Show GoCardless-specific errors as warnings if Plaid might succeed
+        console.warn("GoCardless import:", goCardlessResponse.message);
       }
-      
+
       if (successCount > 0) {
-        toast.success(totalMessage || "Transactions imported successfully", {
+        toast.success(messages.join(" | "), {
           icon: <CheckCircle className="h-4 w-4" />,
         });
         onSuccess?.();
       } else {
-        throw new Error("Import failed for all providers");
+        // Both failed - show the most relevant error message
+        const errorMessage = plaidResponse.message.includes("No bank accounts")
+          ? plaidResponse.message
+          : "No bank accounts connected. Please connect a bank account first.";
+
+        toast.error(errorMessage, {
+          icon: <AlertCircle className="h-4 w-4" />,
+        });
       }
     } catch (error) {
       console.error("Error importing transactions:", error);

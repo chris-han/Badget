@@ -199,7 +199,11 @@ export async function importTransactions(startDate?: Date, endDate?: Date) {
     });
 
     if (plaidItems.length === 0) {
-      throw new Error("No Plaid accounts connected");
+      return {
+        success: false,
+        transactionsImported: 0,
+        message: "No bank accounts connected. Please connect a bank account first.",
+      };
     }
 
     let totalTransactions = 0;
@@ -310,8 +314,30 @@ export async function importTransactions(startDate?: Date, endDate?: Date) {
     };
   } catch (error) {
     console.error("Error importing transactions:", error);
-    throw new Error("Failed to import transactions");
-  } finally {
+
+    // Provide more specific error messages
+    if (error instanceof Error) {
+      if (error.message.includes("ITEM_LOGIN_REQUIRED")) {
+        return {
+          success: false,
+          transactionsImported: 0,
+          message: "Bank login required. Please reconnect your bank account.",
+        };
+      }
+      if (error.message.includes("INVALID_ACCESS_TOKEN")) {
+        return {
+          success: false,
+          transactionsImported: 0,
+          message: "Invalid bank connection. Please reconnect your bank account.",
+        };
+      }
+    }
+
+    return {
+      success: false,
+      transactionsImported: 0,
+      message: error instanceof Error ? error.message : "Failed to import transactions. Please try again.",
+    };
   }
 }
 
